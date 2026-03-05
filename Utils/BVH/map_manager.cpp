@@ -53,10 +53,7 @@ static fs::path find_maps_dir()
         for (const fs::path& p : a_candidates)
         {
             if (fs::exists(p))
-            {
-                printf("[map] found maps dir: '%s'\n", p.string().c_str());
                 return p;
-            }
         }
     }
 
@@ -163,6 +160,14 @@ std::string MapManager::read_map_name() const
     const auto n_slash = sz_name.rfind('/');
     if (n_slash != std::string::npos)
         sz_name = sz_name.substr(n_slash + 1);
+
+    // Strip .vpk extension if present
+    if (sz_name.size() > 4u && sz_name.substr(sz_name.size() - 4u) == ".vpk")
+        sz_name = sz_name.substr(0u, sz_name.size() - 4u);
+
+    // Ignore empty or menu states
+    if (sz_name.empty() || sz_name == "<empty>" || sz_name == "menu" || sz_name == "lobby")
+        return {};
 
     return sz_name;
 }

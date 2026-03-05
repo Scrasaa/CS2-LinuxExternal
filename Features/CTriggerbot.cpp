@@ -8,6 +8,15 @@
 #include "SDK/Helper/CSchemaManager.h"
 #include "Utils/Utils.h"
 
+int RandomReactionTime()
+{
+    static std::random_device rd;
+    static std::mt19937 gen(rd());
+    static std::uniform_int_distribution<int> dist(80, 140);
+
+    return dist(gen);
+}
+
 void CTriggerbot::Run()
 {
     const uint32_t  l_local_pawn_handle = R().ReadMem<uint32_t>(
@@ -35,6 +44,5 @@ void CTriggerbot::Run()
         return;
 
     // Config later, we could use curtime and a float, scope if sniper all var..
-    std::this_thread::sleep_for(std::chrono::milliseconds(10));
     Utils::mouse.mouse1();
 }
