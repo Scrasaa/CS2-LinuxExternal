@@ -573,12 +573,28 @@ namespace Utils
         int center_x() const { return m_center_x; }
         int center_y() const { return m_center_y; }
 
+        void mouse1() { click(BTN_LEFT);  }
+        void mouse2() { click(BTN_RIGHT); }
+
     private:
         int   m_fd;
         int   m_center_x;
         int   m_center_y;
         float m_accum_x = 0.f;
         float m_accum_y = 0.f;
+
+        void click(int a_button = BTN_LEFT)
+        {
+            emit(EV_KEY, a_button, 1);
+            emit(EV_SYN, SYN_REPORT, 0);
+
+            const int l_hold_ms = static_cast<int>(
+                std::uniform_int_distribution<int>(12, 28)(m_rng));
+            usleep(l_hold_ms * 1000);
+
+            emit(EV_KEY, a_button, 0);
+            emit(EV_SYN, SYN_REPORT, 0);
+        }
 
         void setup_device(int screen_width, int screen_height)
         {
@@ -630,6 +646,7 @@ namespace Utils
             ev.value = value;
             write(m_fd, &ev, sizeof(ev));
         }
+
     };
     inline mouse_injector mouse{2560, 1440};
 }

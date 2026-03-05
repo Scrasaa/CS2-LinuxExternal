@@ -29,6 +29,7 @@
 #include "BVH/map_manager.h"
 #include "Features/CAimbot.h"
 #include "Features/CESP.h"
+#include "Features/CTriggerbot.h"
 #include "SDK/Helper/CInput.h"
 
 namespace Overlay
@@ -500,6 +501,7 @@ static void run()
         g_map_manager.update();
         F::ESP.Run();
         if (g_input.is_key_pressed(CS2KeyCode::MouseLeft)) F::Aimbot.Run();
+        if (g_input.is_key_pressed(CS2KeyCode::Mouse5)) F::Triggerbot.Run();
 
         ImGui::Render();
 

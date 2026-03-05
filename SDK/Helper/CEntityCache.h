@@ -76,13 +76,13 @@ public:
     [[nodiscard]] bool        is_class(uintptr_t a_p_identity, const char* a_name) const;
 
     [[nodiscard]] uintptr_t resolve_entity_from_handle(uint32_t a_handle) const;
+    [[nodiscard]] uintptr_t get_controller_at_index(uint32_t a_index) const;
+    [[nodiscard]] uintptr_t read_entity_at_index(uint32_t a_index)   const;
 private:
     uintptr_t               m_p_entity_list;
     std::vector<uintptr_t>  m_entities;         // CCSPlayerController m_pInstance ptrs
 
     [[nodiscard]] uintptr_t read_list_head()                         const;
-    [[nodiscard]] uintptr_t read_entity_at_index(uint32_t a_index)   const;
-
 };
 
 extern CEntityCache g_EntityCache;

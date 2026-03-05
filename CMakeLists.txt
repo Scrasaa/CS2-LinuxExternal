@@ -55,6 +55,8 @@ add_executable(CS2_LinuxExternal
         Utils/BVH/map_manager.cpp
         Utils/BVH/map_parser.h
         Utils/BVH/dmx_parser.h
+        Features/CTriggerbot.cpp
+        Features/CTriggerbot.h
 )
 
 # ── Include dirs ──────────────────────────────────────────────────────────────

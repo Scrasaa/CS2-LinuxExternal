@@ -442,7 +442,7 @@ void CSchemaManager::DumpAllClasses(const std::string& path) const
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// DumpAllClassFields
+// DumpAllClassFields - Skips classes with no fields
 // ─────────────────────────────────────────────────────────────────────────────
 void CSchemaManager::DumpAllClassFields(const std::string& path) const
 {
@@ -452,53 +452,17 @@ void CSchemaManager::DumpAllClassFields(const std::string& path) const
     f << make_timestamp_header();
     f << "// CS2 Schema full field dump (all scopes, absolute offsets)\n\n";
 
-    std::vector<std::pair<std::string, uintptr_t>> scopes;
-    if (!collect_scopes(scopes)) { f << "// ERROR: failed to collect scopes.\n"; return; }
-
-    for (const auto& [scope_name, p_scope] : scopes)
+    for (const auto& [scope_name, class_map] : m_classes)
     {
         f << "// ════════════════════════════════════════════════════════════\n";
         f << "// Scope: " << scope_name << '\n';
         f << "// ════════════════════════════════════════════════════════════\n\n";
 
-        const uint16_t  class_count = R().ReadMem<uint16_t>(p_scope + k_scope_class_count);
-        const uintptr_t class_table = R().ReadMem<uintptr_t>(p_scope + k_scope_class_table);
-
-        auto emit_class = [&](uintptr_t p_class)
+        for (const auto& [class_name, sc] : class_map)
         {
-            if (!is_valid_ptr(p_class)) return;
-            const uintptr_t p_name_ptr = R().ReadMem<uintptr_t>(p_class + k_class_name_ptr);
-            if (!is_valid_str_ptr(p_name_ptr)) return;
-            const std::string class_name = remote_str(p_name_ptr);
-            if (class_name.empty()) return;
-            const auto scope_it = m_classes.find(scope_name);
-            if (scope_it == m_classes.end()) return;
-            const auto class_it = scope_it->second.find(class_name);
-            if (class_it == scope_it->second.end()) return;
-            write_class_block(f, class_it->second);
-        };
-
-        if (class_count > 0 && is_valid_ptr(class_table))
-        {
-            for (uint16_t j = 0; j < class_count; ++j)
-            {
-                const uintptr_t entry_base = class_table
-                    + static_cast<uintptr_t>(j) * k_class_entry_stride;
-                const uintptr_t p_binding  = R().ReadMem<uintptr_t>(entry_base + k_class_entry_ptr_off);
-                if (!is_valid_ptr(p_binding)) continue;
-                const uintptr_t p_class    = R().ReadMem<uintptr_t>(p_binding + k_binding_class_ptr);
-                emit_class(p_class);
-            }
-        }
-        else
-        {
-            f << "// (no class table — using registered hash data)\n";
-            const auto scope_it = m_classes.find(scope_name);
-            if (scope_it != m_classes.end())
-            {
-                for (const auto& [name, sc] : scope_it->second)
-                    write_class_block(f, sc);
-            }
+            if (sc.fields.empty())
+                continue;
+            write_class_block(f, sc);
         }
     }
 

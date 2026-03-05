@@ -277,3 +277,34 @@ bool CEntityCache::is_class(uintptr_t a_p_identity, const char* a_name) const
     const std::string l_classname = get_classname(a_p_identity);
     return !l_classname.empty() && l_classname == a_name;
 }
+
+uintptr_t CEntityCache::get_controller_at_index(uint32_t a_index) const
+{
+    if (!is_valid_ptr(m_p_entity_list))
+        return 0;
+
+    const uint32_t  l_bucket_index    = a_index >> 9;
+    const uint32_t  l_index_in_bucket = a_index & 0x1FF;
+
+    const uintptr_t lp_chunk = R().ReadMem<uintptr_t>(
+        m_p_entity_list + sizeof(uintptr_t) * l_bucket_index);
+
+    if (!is_valid_ptr(lp_chunk))
+        return 0;
+
+    const uintptr_t lp_identity = lp_chunk + k_entity_identity_size * l_index_in_bucket;
+
+    // Validate handle slot matches requested index
+    const uint32_t l_handle = R().ReadMem<uint32_t>(lp_identity + k_identity_handle);
+    if ((l_handle & 0x7FFF) != a_index)
+        return 0;
+
+    const uintptr_t lp_controller = R().ReadMem<uintptr_t>(lp_identity);
+    if (!is_valid_ptr(lp_controller))
+        return 0;
+
+    if (!is_class(lp_controller, "CCSPlayerController"))
+        return 0;
+
+    return lp_controller;
+}
