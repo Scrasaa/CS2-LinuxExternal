@@ -1,0 +1,3 @@
+/home/scrasa/CLionProjects/CS2-LinuxExternal/cmake-build-debug/CMakeFiles/CS2_LinuxExternal.dir
+/home/scrasa/CLionProjects/CS2-LinuxExternal/cmake-build-debug/CMakeFiles/edit_cache.dir
+/home/scrasa/CLionProjects/CS2-LinuxExternal/cmake-build-debug/CMakeFiles/rebuild_cache.dir

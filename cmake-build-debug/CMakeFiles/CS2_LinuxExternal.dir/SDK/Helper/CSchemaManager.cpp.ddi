@@ -1,0 +1,11 @@
+{
+"rules": [
+{
+"primary-output": "CMakeFiles/CS2_LinuxExternal.dir/SDK/Helper/CSchemaManager.cpp.o",
+"requires": [
+]
+}
+],
+"version": 0,
+"revision": 0
+}
