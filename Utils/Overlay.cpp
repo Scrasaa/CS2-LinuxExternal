@@ -26,6 +26,7 @@
 #include "../Thirdparty/ImGUI/imgui.h"
 #include "../Thirdparty/ImGUI/backends/imgui_impl_opengl3.h"
 #include "../Thirdparty/ImGUI/backends/imgui_impl_x11.h"
+#include "BVH/map_manager.h"
 #include "Features/CAimbot.h"
 #include "Features/CESP.h"
 #include "SDK/Helper/CInput.h"
@@ -496,8 +497,9 @@ static void run()
         // in your loop:
         g_input.update(fn_read, u64ButtonBase);
 
+        g_map_manager.update();
         F::ESP.Run();
-        if (g_input.is_key_pressed(CS2KeyCode::Mouse5)) F::Aimbot.Run();
+        if (g_input.is_key_pressed(CS2KeyCode::MouseLeft)) F::Aimbot.Run();
 
         ImGui::Render();
 

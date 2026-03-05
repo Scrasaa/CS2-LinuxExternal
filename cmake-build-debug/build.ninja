@@ -177,6 +177,14 @@ build CMakeFiles/CS2_LinuxExternal.dir/SDK/key_codes.cpp.o: CXX_COMPILER__CS2_Li
   OBJECT_DIR = CMakeFiles/CS2_LinuxExternal.dir
   OBJECT_FILE_DIR = CMakeFiles/CS2_LinuxExternal.dir/SDK
 
+build CMakeFiles/CS2_LinuxExternal.dir/Utils/BVH/map_manager.cpp.o: CXX_COMPILER__CS2_LinuxExternal_unscanned_Debug /home/scrasa/CLionProjects/CS2-LinuxExternal/Utils/BVH/map_manager.cpp || cmake_object_order_depends_target_CS2_LinuxExternal
+  CONFIG = Debug
+  DEP_FILE = CMakeFiles/CS2_LinuxExternal.dir/Utils/BVH/map_manager.cpp.o.d
+  FLAGS = -g -std=gnu++20 -fdiagnostics-color=always
+  INCLUDES = -I/home/scrasa/CLionProjects/CS2-LinuxExternal -I/home/scrasa/CLionProjects/CS2-LinuxExternal/Thirdparty/ImGUI -I/home/scrasa/CLionProjects/CS2-LinuxExternal/Thirdparty/ImGUI/backends
+  OBJECT_DIR = CMakeFiles/CS2_LinuxExternal.dir
+  OBJECT_FILE_DIR = CMakeFiles/CS2_LinuxExternal.dir/Utils/BVH
+
 
 # =============================================================================
 # Link build statements for EXECUTABLE target CS2_LinuxExternal
@@ -185,7 +193,7 @@ build CMakeFiles/CS2_LinuxExternal.dir/SDK/key_codes.cpp.o: CXX_COMPILER__CS2_Li
 #############################################
 # Link the executable CS2_LinuxExternal
 
-build CS2_LinuxExternal: CXX_EXECUTABLE_LINKER__CS2_LinuxExternal_Debug CMakeFiles/CS2_LinuxExternal.dir/main.cpp.o CMakeFiles/CS2_LinuxExternal.dir/Utils/Utils.cpp.o CMakeFiles/CS2_LinuxExternal.dir/Utils/Overlay.cpp.o CMakeFiles/CS2_LinuxExternal.dir/SDK/Helper/CSchemaManager.cpp.o CMakeFiles/CS2_LinuxExternal.dir/Thirdparty/ImGUI/imgui.cpp.o CMakeFiles/CS2_LinuxExternal.dir/Thirdparty/ImGUI/imgui_draw.cpp.o CMakeFiles/CS2_LinuxExternal.dir/Thirdparty/ImGUI/imgui_tables.cpp.o CMakeFiles/CS2_LinuxExternal.dir/Thirdparty/ImGUI/imgui_widgets.cpp.o CMakeFiles/CS2_LinuxExternal.dir/Thirdparty/ImGUI/imgui_demo.cpp.o CMakeFiles/CS2_LinuxExternal.dir/Thirdparty/ImGUI/backends/imgui_impl_opengl3.cpp.o CMakeFiles/CS2_LinuxExternal.dir/Thirdparty/ImGUI/backends/imgui_impl_x11.cpp.o CMakeFiles/CS2_LinuxExternal.dir/SDK/Helper/CEntityCache.cpp.o CMakeFiles/CS2_LinuxExternal.dir/Features/CAimbot.cpp.o CMakeFiles/CS2_LinuxExternal.dir/Features/CESP.cpp.o CMakeFiles/CS2_LinuxExternal.dir/SDK/Helper/CInput.cpp.o CMakeFiles/CS2_LinuxExternal.dir/SDK/key_codes.cpp.o | /usr/lib/libSM.so /usr/lib/libICE.so /usr/lib/libX11.so /usr/lib/libXext.so /usr/lib/libXfixes.so /usr/lib/libX11.so /usr/lib/libGLX.so /usr/lib/libOpenGL.so
+build CS2_LinuxExternal: CXX_EXECUTABLE_LINKER__CS2_LinuxExternal_Debug CMakeFiles/CS2_LinuxExternal.dir/main.cpp.o CMakeFiles/CS2_LinuxExternal.dir/Utils/Utils.cpp.o CMakeFiles/CS2_LinuxExternal.dir/Utils/Overlay.cpp.o CMakeFiles/CS2_LinuxExternal.dir/SDK/Helper/CSchemaManager.cpp.o CMakeFiles/CS2_LinuxExternal.dir/Thirdparty/ImGUI/imgui.cpp.o CMakeFiles/CS2_LinuxExternal.dir/Thirdparty/ImGUI/imgui_draw.cpp.o CMakeFiles/CS2_LinuxExternal.dir/Thirdparty/ImGUI/imgui_tables.cpp.o CMakeFiles/CS2_LinuxExternal.dir/Thirdparty/ImGUI/imgui_widgets.cpp.o CMakeFiles/CS2_LinuxExternal.dir/Thirdparty/ImGUI/imgui_demo.cpp.o CMakeFiles/CS2_LinuxExternal.dir/Thirdparty/ImGUI/backends/imgui_impl_opengl3.cpp.o CMakeFiles/CS2_LinuxExternal.dir/Thirdparty/ImGUI/backends/imgui_impl_x11.cpp.o CMakeFiles/CS2_LinuxExternal.dir/SDK/Helper/CEntityCache.cpp.o CMakeFiles/CS2_LinuxExternal.dir/Features/CAimbot.cpp.o CMakeFiles/CS2_LinuxExternal.dir/Features/CESP.cpp.o CMakeFiles/CS2_LinuxExternal.dir/SDK/Helper/CInput.cpp.o CMakeFiles/CS2_LinuxExternal.dir/SDK/key_codes.cpp.o CMakeFiles/CS2_LinuxExternal.dir/Utils/BVH/map_manager.cpp.o | /usr/lib/libSM.so /usr/lib/libICE.so /usr/lib/libX11.so /usr/lib/libXext.so /usr/lib/libXfixes.so /usr/lib/libX11.so /usr/lib/libGLX.so /usr/lib/libOpenGL.so
   CONFIG = Debug
   DEP_FILE = CMakeFiles/CS2_LinuxExternal.dir/link.d
   FLAGS = -g

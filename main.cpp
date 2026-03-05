@@ -11,8 +11,11 @@
 #include "Utils/Overlay.h"
 
 #include "SDK/Helper/CSchemaManager.h"
+#include "Utils/BVH/map_manager.h"
 
 CEntityCache g_EntityCache{0};
+MapManager g_map_manager;
+uintptr_t g_global_vars = 0;
 
 int main()
 {
@@ -104,6 +107,32 @@ int main()
     }
 
     printf("EntitySystem 0x%llx\n", static_cast<unsigned long long>(entity_system));
+
+    const auto pattern_hit_global_vars = R().PatternScan("libclient.so", "48 8D 05 ? ? ? ? 48 8B 00 8B 50 ? E9");
+    if (!pattern_hit_global_vars)
+    {
+        std::cerr << "[-] Pattern for pattern_hit_global_vars not found in libclient.so.\n";
+        CUtils::Shutdown();
+        return 1;
+    }
+
+    g_global_vars = R().GetAbsoluteAddress(pattern_hit_global_vars, 0x3, 0x7);
+
+    if (!g_global_vars)
+    {
+        std::cerr << "[-] Failed to resolve g_global_vars.\n";
+        CUtils::Shutdown();
+        return 1;
+    }
+
+    g_map_manager = MapManager
+    (
+    g_global_vars,
+    [](uintptr_t addr)                      { return R().ReadMem<uintptr_t>(addr); },
+    [](uintptr_t addr, std::size_t n)
+    {return R().ReadString(addr, n);},
+    "/home/scrasa/CLionProjects/CS2-LinuxExternal/Thirdparty/cli-linux-x64/Source2Viewer-CLI"
+    );
 
     auto engine_mod = utils.GetModuleBase( "libengine2.so");
 

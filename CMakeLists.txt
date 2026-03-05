@@ -49,6 +49,12 @@ add_executable(CS2_LinuxExternal
         SDK/Helper/CInput.h
         SDK/key_codes.h
         SDK/key_codes.cpp
+        Utils/BVH/Bvh.h
+        Utils/BVH/map_visibility.h
+        Utils/BVH/map_manager.h
+        Utils/BVH/map_manager.cpp
+        Utils/BVH/map_parser.h
+        Utils/BVH/dmx_parser.h
 )
 
 # ── Include dirs ──────────────────────────────────────────────────────────────

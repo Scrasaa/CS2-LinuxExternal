@@ -24,6 +24,7 @@
 #include <atomic>
 #include <thread>
 #include <dirent.h>
+#include <random>
 
 #include "imgui.h"
 #include "../SDK/defs.h"
@@ -473,24 +474,96 @@ namespace Utils
             close(m_fd);
         }
 
+        // ── Humanization state (NEW) ──────────────────────────────────────────────
+        std::mt19937 m_rng       { std::random_device{}() };  // move inside the class
+        float        m_f_vel_x   = 0.0f;   // inertia carry-over X
+        float        m_f_vel_y   = 0.0f;   // inertia carry-over Y
+        float        m_f_noise_x = 0.0f;   // low-freq wobble state X
+        float        m_f_noise_y = 0.0f;   // low-freq wobble state Y
+        int          m_i_skip_ctr = 0;     // dead-frame counter
+
         // FPS aimbot: game always locks cursor to center, so delta IS the target offset
         void aim_at(float target_x, float target_y, float smoothing = 1.0f)
         {
-            float dx = (target_x - m_center_x) * smoothing;
-            float dy = (target_y - m_center_y) * smoothing;
+                  // ── RNG helpers ───────────────────────────────────────────────────────────
+            auto f_gauss = [&](float stddev) -> float
+            {
+                std::normal_distribution<float> d(0.0f, stddev);
+                return d(m_rng);
+            };
+            auto f_uniform = [&](float lo, float hi) -> float
+            {
+                std::uniform_real_distribution<float> d(lo, hi);
+                return d(m_rng);
+            };
 
-            // Accumulate sub-pixel error so we never lose precision on small deltas
-            m_accum_x += dx;
-            m_accum_y += dy;
+            const float f_dx   = (target_x - m_center_x) * smoothing;
+            const float f_dy   = (target_y - m_center_y) * smoothing;
+            const float f_dist = std::hypot(f_dx, f_dy);
 
-            int ix = static_cast<int>(m_accum_x);
-            int iy = static_cast<int>(m_accum_y);
+            // ── Factor 1: Dead frames (~5 % of ticks) ────────────────────────────────
+            // Humans hesitate; a perfectly clocked input stream is a strong bot signal.
+            if (m_i_skip_ctr > 0)
+            {
+                --m_i_skip_ctr;
+                return;
+            }
+            if (f_uniform(0.0f, 1.0f) < 0.05f)
+            {
+                m_i_skip_ctr = static_cast<int>(f_uniform(1.0f, 4.0f));
+                return;
+            }
+
+            // ── Factor 2: Inertia / momentum ─────────────────────────────────────────
+            // Blends desired velocity into a running state — prevents instant reversal
+            // and creates natural ease-in / ease-out around direction changes.
+            constexpr float k_inertia = 0.62f;
+            m_f_vel_x = m_f_vel_x * k_inertia + f_dx * (1.0f - k_inertia);
+            m_f_vel_y = m_f_vel_y * k_inertia + f_dy * (1.0f - k_inertia);
+
+            // ── Factor 3: Low-frequency path wobble (wrist / arm drift) ──────────────
+            // Correlated noise that evolves smoothly across frames — not pure white
+            // noise — so the path curves naturally rather than flickering.
+            constexpr float k_wobble_decay  = 0.80f;
+            constexpr float k_wobble_inject = 0.05f;
+            m_f_noise_x = m_f_noise_x * k_wobble_decay + f_gauss(f_dist * k_wobble_inject);
+            m_f_noise_y = m_f_noise_y * k_wobble_decay + f_gauss(f_dist * k_wobble_inject);
+
+            float f_move_x = m_f_vel_x + m_f_noise_x;
+            float f_move_y = m_f_vel_y + m_f_noise_y;
+
+            // ── Factor 4: High-frequency micro-jitter (finger tremor) ────────────────
+            // Small gaussian noise on every moving frame; suppressed near the target
+            // so fine-aim doesn't vibrate excessively.
+            if (f_dist > 2.0f)
+            {
+                f_move_x += f_gauss(0.18f);
+                f_move_y += f_gauss(0.18f);
+            }
+
+            // ── Factor 5: Distance-adaptive speed variation ───────────────────────────
+            // Humans flick quickly over large distances and crawl during fine aim.
+            // A fixed per-pixel rate is trivially detectable.
+            float f_speed_scale;
+            if      (f_dist > 80.0f) f_speed_scale = f_uniform(1.06f, 1.20f); // flick burst
+            else if (f_dist <  8.0f) f_speed_scale = f_uniform(0.76f, 0.94f); // fine-aim creep
+            else                     f_speed_scale = f_uniform(0.96f, 1.04f); // mid-range jitter
+
+            f_move_x *= f_speed_scale;
+            f_move_y *= f_speed_scale;
+
+            // ── Sub-pixel accumulation ────────────────────────────────────────────────
+            m_accum_x += f_move_x;
+            m_accum_y += f_move_y;
+
+            const int ix = static_cast<int>(m_accum_x);
+            const int iy = static_cast<int>(m_accum_y);
 
             if (ix == 0 && iy == 0)
-                return; // Nothing to send yet
+                return;
 
-            m_accum_x -= ix;
-            m_accum_y -= iy;
+            m_accum_x -= static_cast<float>(ix);
+            m_accum_y -= static_cast<float>(iy);
 
             if (ix != 0) emit(EV_REL, REL_X, ix);
             if (iy != 0) emit(EV_REL, REL_Y, iy);
@@ -560,5 +633,7 @@ namespace Utils
     };
     inline mouse_injector mouse{2560, 1440};
 }
+
+extern uintptr_t g_global_vars;
 
 #endif // CS2_LINUXEXTERNAL_UTILS_H

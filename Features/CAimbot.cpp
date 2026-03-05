@@ -10,6 +10,7 @@
 #include "SDK/Helper/CEntityCache.h"
 #include "SDK/Helper/CSchemaManager.h"
 #include "Utils/Utils.h"
+#include "Utils/BVH/map_manager.h"
 
 uintptr_t CAimbot::GetClosestToScreen(uintptr_t local_pawn)
 {
@@ -91,11 +92,36 @@ void CAimbot::Run()
 
     const auto head_pos = bone_position(game_scene_node, static_cast<uint64_t>(Bones::Head));
 
+    auto local_player_head = bone_position(R().ReadMem<uintptr_t>(local_pawn + SCHEMA_OFFSET(C_BaseEntity, m_pGameSceneNode)),
+        static_cast<uint64_t>(Bones::Head));
+
+    if (!g_map_manager.is_visible({local_player_head.x, local_player_head.y, local_player_head.z}, {head_pos.x, head_pos.y, head_pos.z}))
+        return;
+
     const auto head_w2s = Utils::Math::WorldToScreen(head_pos, 2560, 1440);
+
+    // ── Smoothing value reference ─────────────────────────────────────────────────
+    // aim_at(target_x, target_y, smoothing)
+    //
+    // smoothing    behaviour                       detection risk
+    // ─────────────────────────────────────────────────────────────
+    // 1.00f        instant snap to target          extreme  — single-frame velocity spike
+    // 0.30f–0.50f  fast but smooth                 high     — suspiciously rapid acquisition
+    // 0.12f–0.20f  comfortable tracking            low      — resembles high-sens player
+    // 0.08f–0.12f  ✅ sweet spot                   very low — natural deceleration curve
+    // < 0.05f      sluggish, misses moving targets  very low — poor aim tradeoff
+    //
+    // note: k_inertia=0.62f compounds with smoothing, so 0.10f feels like ~0.35f in practice
+    // note: dead-frame skip adds irregularity, allowing slightly higher smoothing safely
+    //
+    // recommended: aim_at(target_x, target_y, 0.10f);  // general use
+    //              aim_at(target_x, target_y, 0.14f);  // tactical / slow-paced
+    //              aim_at(target_x, target_y, 0.08f);  // arena / fast-moving targets
+    // ─────────────────────────────────────────────────────────────────────────────
 
     if (head_w2s.has_value())
     {
         const auto screen_head_pos = head_w2s.value();
-        Utils::mouse.aim_at(screen_head_pos.x,screen_head_pos.y, 0.15f);
+        Utils::mouse.aim_at(screen_head_pos.x,screen_head_pos.y, 0.12f);
     }
 }

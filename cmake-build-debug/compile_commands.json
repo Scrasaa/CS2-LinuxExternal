@@ -94,5 +94,11 @@
   "command": "/usr/bin/c++ -I/home/scrasa/CLionProjects/CS2-LinuxExternal -I/home/scrasa/CLionProjects/CS2-LinuxExternal/Thirdparty/ImGUI -I/home/scrasa/CLionProjects/CS2-LinuxExternal/Thirdparty/ImGUI/backends -g -std=gnu++20 -fdiagnostics-color=always -o CMakeFiles/CS2_LinuxExternal.dir/SDK/key_codes.cpp.o -c /home/scrasa/CLionProjects/CS2-LinuxExternal/SDK/key_codes.cpp",
   "file": "/home/scrasa/CLionProjects/CS2-LinuxExternal/SDK/key_codes.cpp",
   "output": "/home/scrasa/CLionProjects/CS2-LinuxExternal/cmake-build-debug/CMakeFiles/CS2_LinuxExternal.dir/SDK/key_codes.cpp.o"
+},
+{
+  "directory": "/home/scrasa/CLionProjects/CS2-LinuxExternal/cmake-build-debug",
+  "command": "/usr/bin/c++ -I/home/scrasa/CLionProjects/CS2-LinuxExternal -I/home/scrasa/CLionProjects/CS2-LinuxExternal/Thirdparty/ImGUI -I/home/scrasa/CLionProjects/CS2-LinuxExternal/Thirdparty/ImGUI/backends -g -std=gnu++20 -fdiagnostics-color=always -o CMakeFiles/CS2_LinuxExternal.dir/Utils/BVH/map_manager.cpp.o -c /home/scrasa/CLionProjects/CS2-LinuxExternal/Utils/BVH/map_manager.cpp",
+  "file": "/home/scrasa/CLionProjects/CS2-LinuxExternal/Utils/BVH/map_manager.cpp",
+  "output": "/home/scrasa/CLionProjects/CS2-LinuxExternal/cmake-build-debug/CMakeFiles/CS2_LinuxExternal.dir/Utils/BVH/map_manager.cpp.o"
 }
 ]
