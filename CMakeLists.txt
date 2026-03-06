@@ -61,6 +61,8 @@ add_executable(CS2_LinuxExternal
         Utils/Config.cpp
         Utils/Config.h
         Thirdparty/json.h
+        SDK/Helper/ConVar.h
+        SDK/Helper/ConVar.cpp
 )
 
 # ── Include dirs ──────────────────────────────────────────────────────────────

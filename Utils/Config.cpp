@@ -51,13 +51,19 @@ void cfg::Load(const std::string& cfgName)
     json j;
     file >> j;
 
-      // ----- Aimbot -----
+    // ----- Aimbot -----
     auto jAimbot = j.value("Aimbot", json::object());
     g_config.aimbot.bEnable        = jAimbot.value("bEnable", g_config.aimbot.bEnable);
     g_config.aimbot.bVisible        = jAimbot.value("bVisible", g_config.aimbot.bVisible);
     g_config.aimbot.fRadius         = jAimbot.value("fRadius", g_config.aimbot.fRadius);
     g_config.aimbot.fSmoothness         = jAimbot.value("fSmoothness", g_config.aimbot.fSmoothness);
     g_config.aimbot.bAutoShoot      = jAimbot.value("bAutoShoot", g_config.aimbot.bAutoShoot);
+
+    // ----- Aimbot -----
+    auto jTriggerbot = j.value("Triggerbot", json::object());
+    g_config.triggerbot.bEnable        = jAimbot.value("bEnable", g_config.triggerbot.bEnable);
+    g_config.triggerbot.iMinReaction        = jAimbot.value("fMinReaction", g_config.triggerbot.iMinReaction);
+    g_config.triggerbot.iMaxReaction         = jAimbot.value("fMaxReaction", g_config.triggerbot.iMaxReaction);
 
     // ----- ESP: Players -----
     auto jPlayerESP = j.value("ESP_Players", json::object());
@@ -91,6 +97,13 @@ void cfg::Save(const std::string& cfgName)
         {"fRadius", g_config.aimbot.fRadius},
         {"fSmoothness", g_config.aimbot.fSmoothness},
         {"bAutoShoot", g_config.aimbot.bAutoShoot},
+    };
+
+    j["Triggerbot"] =
+    {
+        {"bEnable", g_config.triggerbot.bEnable},
+        {"fMinReaction", g_config.triggerbot.iMinReaction},
+        {"fMaxReaction", g_config.triggerbot.iMaxReaction},
     };
 
     // ----- ESP: Players -----

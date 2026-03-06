@@ -7,6 +7,7 @@
 
 #include "Features/CAimbot.h"
 #include "SDK/Helper/CEntityCache.h"
+#include "SDK/Helper/ConVar.h"
 #include "Utils/Utils.h"
 #include "Utils/Overlay.h"
 
@@ -185,6 +186,13 @@ int main()
 
     g_screen_w = 2560;
     g_screen_h = 1440;
+
+    if (!resolve_convar_offsets(g_offsets, "libtier0.so"))
+    {
+        std::cerr << "[-] Failed to resolve g_EntityCache.m_p_localplayer.\n";
+        CUtils::Shutdown();
+        return 1;
+    }
 
     Overlay::Start(0,0,2560, 1440);
 

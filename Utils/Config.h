@@ -25,6 +25,14 @@ namespace cfg
         bool bAutoShoot = false;
     };
 
+    struct Triggerbot
+    {
+        bool bEnable = false;
+
+        int iMinReaction = 0;
+        int iMaxReaction = 0;
+    };
+
     struct ESP
     {
         struct Player
@@ -65,6 +73,7 @@ namespace cfg
     struct Config
     {
         Aimbot aimbot;
+        Triggerbot triggerbot;
         ESP esp;
         Visuals visuals;
     };

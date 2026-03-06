@@ -135,9 +135,11 @@ void CESP::Run()
 
         auto pawn_team = R().ReadMem<int32_t>(pawn + SCHEMA_OFFSET(C_BaseEntity, m_iTeamNum));
 
-        if (!g_config.esp.player.bTeam)
-            if (pawn_team == local_team)
+        if (!g_is_ffa)
+        {
+            if (!g_config.esp.player.bTeam && pawn_team == local_team)
                 continue;
+        }
 
         const auto game_scene_node = R().ReadMem<uintptr_t>(pawn + SCHEMA_OFFSET(C_BaseEntity, m_pGameSceneNode));
         if (!is_valid_ptr(game_scene_node))
@@ -166,7 +168,7 @@ void CESP::Run()
             if (!g_map_manager.is_visible(
             { local_head_pos.x, local_head_pos.y, local_head_pos.z },
             { head_pos.x,       head_pos.y,       head_pos.z       }))
-                return;
+                continue;
         }
 
         if (g_config.esp.player.bSkeleton)

@@ -4,6 +4,7 @@
 
 #ifndef CS2_LINUXEXTERNAL_UTILS_H
 #define CS2_LINUXEXTERNAL_UTILS_H
+#pragma once
 
 #include <cstdint>
 #include <cstring>

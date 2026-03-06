@@ -33,6 +33,7 @@
 #include "Features/CESP.h"
 #include "Features/CTriggerbot.h"
 #include "SDK/Helper/CInput.h"
+#include "SDK/Helper/ConVar.h"
 
 namespace Overlay
 {
@@ -465,10 +466,8 @@ bool SliderFloatCompact(const char* label, float* v, float min, float max, const
 bool SliderIntCompact(const char* label, int* v, int min, int max, const char* format = "%d")
 {
     ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(2.f, 1.f));
-    bool changed = ImGui::SliderInt("#label", v, min, max, format);
+    bool changed = ImGui::SliderInt(label, v, min, max, format);
     ImGui::PopStyleVar();
-    ImGui::NewLine();
-    ImGui::Text(label);
     return changed;
 }
 
@@ -490,8 +489,8 @@ void DrawMenu()
             CheckboxCompact("Visibility Check", &g_config.aimbot.bVisible);
             CheckboxCompact("Enable Auto Shoot", &g_config.aimbot.bAutoShoot);
             ImGui::Separator();
-            SliderFloatCompact("Aim Radius", &g_config.aimbot.fRadius, 0.0f, 2560.f, "%1.f");
-            SliderFloatCompact("Aimbot Smoothness", &g_config.aimbot.fSmoothness, 0.0f, 1.f, "%.2f");
+            SliderFloatCompact("Aim Radius", &g_config.aimbot.fRadius, 1.f, 2560.f, "%1.f");
+            SliderFloatCompact("Aimbot Smoothness", &g_config.aimbot.fSmoothness, 0.01f, 1.f, "%.2f");
 
             ImGui::EndChild();
 
@@ -500,6 +499,22 @@ void DrawMenu()
             ImGui::BeginChild("AimbotRight", ImVec2(0, 0), true);
             ImGui::Text("Weapon Settings");
             ImGui::Separator();
+            ImGui::EndChild();
+
+            ImGui::EndTabItem();
+        }
+
+        if (ImGui::BeginTabItem("Triggerbot"))
+        {
+            ImGui::BeginChild("TriggerbotLeft", ImVec2(ImGui::GetContentRegionAvail().x * 0.5f, 0), true);
+            ImGui::Text("Triggerbot Settings");
+            ImGui::Separator();
+
+            CheckboxCompact("Enable Triggerbot", &g_config.triggerbot.bEnable);
+            ImGui::Separator();
+            SliderIntCompact("Min Reaction (ms)", &g_config.triggerbot.iMinReaction, 1, 300);
+            SliderIntCompact("Max Reaction", &g_config.triggerbot.iMaxReaction, 1, 300);
+
             ImGui::EndChild();
 
             ImGui::EndTabItem();
@@ -693,6 +708,7 @@ static void run()
         g_input.update(fn_read, u64ButtonBase);
 
         g_map_manager.update();
+        g_is_ffa = is_ffa(g_offsets);
         F::ESP.Run();
         if (g_input.is_key_pressed(CS2KeyCode::MouseLeft)) F::Aimbot.Run();
         if (g_input.is_key_pressed(CS2KeyCode::Mouse5)) F::Triggerbot.Run();

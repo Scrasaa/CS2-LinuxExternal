@@ -63,7 +63,7 @@ uintptr_t CAimbot::GetClosestToScreen(uintptr_t local_pawn)
         if (R().ReadMem<uint8_t>(pawn + SCHEMA_OFFSET(C_BaseEntity, m_lifeState)) != 0)
             continue;
 
-        if (R().ReadMem<int32_t>(pawn + SCHEMA_OFFSET(C_BaseEntity, m_iTeamNum)) == local_team)
+        if (!g_is_ffa && R().ReadMem<int32_t>(pawn + SCHEMA_OFFSET(C_BaseEntity, m_iTeamNum)) == local_team)
             continue;
 
         const auto game_scene_node = R().ReadMem<uintptr_t>(pawn + SCHEMA_OFFSET(C_BaseEntity, m_pGameSceneNode));
