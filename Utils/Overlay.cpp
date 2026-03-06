@@ -23,6 +23,8 @@
 #include <GL/glx.h>
 
 // ImGui
+#include "Config.h"
+#include "globals.h"
 #include "../Thirdparty/ImGUI/imgui.h"
 #include "../Thirdparty/ImGUI/backends/imgui_impl_opengl3.h"
 #include "../Thirdparty/ImGUI/backends/imgui_impl_x11.h"
@@ -403,7 +405,198 @@ static bool init(int x, int y, int w, int h)
 
     return true;
 }
+// ─────────────────────────────────────────────────────────────────────────────
+// Menu Design
+// ─────────────────────────────────────────────────────────────────────────────
 
+int idxEsp = 0;
+char cfgNameBuf[32] = "";
+
+
+int selectedCfgIndex = -1;
+
+void DrawFileSelector()
+{
+    ImGui::Text("Select a config file:");
+
+    const auto configs = cfg::GetConfigFiles();
+    float listHeight = ImGui::GetTextLineHeightWithSpacing() * configs.size();
+
+    ImGui::BeginChild("FileList", ImVec2(0, listHeight), true); // scrollable area
+    {
+        for (int i = 0; i < configs.size(); i++)
+        {
+            const bool isSelected = (i == selectedCfgIndex);
+
+            if (ImGui::Selectable(configs[i].c_str(), isSelected))
+                selectedCfgIndex = i;
+        }
+        ImGui::EndChild();
+    }
+
+    if (selectedCfgIndex >= 0 && ImGui::Button("Save selected"))
+        cfg::Save(configs[selectedCfgIndex]);
+
+
+    if (selectedCfgIndex >= 0 && ImGui::Button("Load selected"))
+        cfg::Load(configs[selectedCfgIndex]);
+
+
+    if (selectedCfgIndex >= 0 && ImGui::Button("Delete selected"))
+        cfg::Delete(configs[selectedCfgIndex]);
+}
+
+bool CheckboxCompact(const char* label, bool* v)
+{
+    ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(1.f, 1.f));
+    bool changed = ImGui::Checkbox(label, v);
+    ImGui::PopStyleVar();
+    return changed;
+}
+
+bool SliderFloatCompact(const char* label, float* v, float min, float max, const char* format = "%1.f")
+{
+    ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(2.f, 1.f));
+    bool changed = ImGui::SliderFloat(label, v, min, max, format);
+    ImGui::PopStyleVar();
+    return changed;
+}
+
+bool SliderIntCompact(const char* label, int* v, int min, int max, const char* format = "%d")
+{
+    ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(2.f, 1.f));
+    bool changed = ImGui::SliderInt("#label", v, min, max, format);
+    ImGui::PopStyleVar();
+    ImGui::NewLine();
+    ImGui::Text(label);
+    return changed;
+}
+
+void DrawMenu()
+{
+    ImGui::Begin("Linux External - [DEV BUILD]", nullptr, ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoResize);
+    ImGui::SetWindowSize(ImVec2(600, 400));
+
+    if (ImGui::BeginTabBar("MainTabs"))
+    {
+        // Aimbot tab
+        if (ImGui::BeginTabItem("Aimbot"))
+        {
+            ImGui::BeginChild("AimbotLeft", ImVec2(ImGui::GetContentRegionAvail().x * 0.5f, 0), true);
+            ImGui::Text("Aimbot Settings");
+            ImGui::Separator();
+
+            CheckboxCompact("Enable Aimbot", &g_config.aimbot.bEnable);
+            CheckboxCompact("Visibility Check", &g_config.aimbot.bVisible);
+            CheckboxCompact("Enable Auto Shoot", &g_config.aimbot.bAutoShoot);
+            ImGui::Separator();
+            SliderFloatCompact("Aim Radius", &g_config.aimbot.fRadius, 0.0f, 2560.f, "%1.f");
+            SliderFloatCompact("Aimbot Smoothness", &g_config.aimbot.fSmoothness, 0.0f, 1.f, "%.2f");
+
+            ImGui::EndChild();
+
+            ImGui::SameLine();
+
+            ImGui::BeginChild("AimbotRight", ImVec2(0, 0), true);
+            ImGui::Text("Weapon Settings");
+            ImGui::Separator();
+            ImGui::EndChild();
+
+            ImGui::EndTabItem();
+        }
+
+        if (ImGui::BeginTabItem("ESP"))
+        {
+            ImGui::BeginChild("ESPLeft", ImVec2(ImGui::GetContentRegionAvail().x * 0.5f, 0), true);
+            {
+                ImGui::Text("ESP Settings");
+                ImGui::Separator();
+
+                switch (idxEsp)
+                {
+                    case 0:
+                    {
+                        // Players
+                        CheckboxCompact("Enable ESP", &g_config.esp.player.bEnable);
+                        CheckboxCompact("Draw 2D Box", &g_config.esp.player.bDraw2DBox);
+                        CheckboxCompact("Draw Name", &g_config.esp.player.bName);
+                        CheckboxCompact("Draw Health", &g_config.esp.player.bHealth);
+                        CheckboxCompact("Only Visible", &g_config.esp.player.bVisible);
+                        CheckboxCompact("Draw Weapon", &g_config.esp.player.bWeapon);
+                        CheckboxCompact("Draw Skeleton", &g_config.esp.player.bSkeleton);
+                        break;
+                    }
+                    case 1:
+                    {
+                        // Weapons
+                        break;
+                    }
+                    case 2:
+                    {
+                        // C4
+                        break;
+                    }
+                    case 3:
+                    {
+                        // Chicken?
+                        break;
+                    }
+                    default:;
+                }
+                ImGui::EndChild();
+            }
+
+            ImGui::SameLine();
+
+            ImGui::BeginChild("ESPRight", ImVec2(0, 0), true);
+            {
+                ImGui::Text("Filter Settings");
+                ImGui::Separator();
+                // dropdown select? test
+
+                ImGui::EndChild();
+            }
+            ImGui::EndTabItem();
+        }
+
+        if (ImGui::BeginTabItem("Visuals"))
+        {
+            ImGui::BeginChild("VisualsLeft", ImVec2(ImGui::GetContentRegionAvail().x * 0.5f, 0), true);
+            ImGui::Text("Visual Settings");
+            ImGui::Separator();
+
+            CheckboxCompact("Draw Aimbot FOV", &g_config.visuals.bDrawFovCircle);
+            CheckboxCompact("Draw Snaplines", &g_config.visuals.bDrawSnapLines);
+
+            ImGui::EndChild();
+
+            ImGui::SameLine();
+
+            ImGui::BeginChild("VisualsRight", ImVec2(0, 0), true);
+            ImGui::EndChild();
+
+            ImGui::EndTabItem();
+        }
+
+        if (ImGui::BeginTabItem("Config"))
+        {
+            DrawFileSelector();
+
+            ImGui::InputText("##input", cfgNameBuf, IM_ARRAYSIZE(cfgNameBuf));
+
+            if (ImGui::Button("Create new config"))
+            {
+                cfg::Save(cfgNameBuf);
+            }
+
+            ImGui::EndTabItem();
+        }
+
+        ImGui::EndTabBar();
+    }
+
+    ImGui::End();
+}
 // ─────────────────────────────────────────────────────────────────────────────
 // Run
 // ─────────────────────────────────────────────────────────────────────────────
@@ -463,6 +656,9 @@ static void run()
         ImGui::GetIO().DisplaySize = ImVec2(static_cast<float>(g_ow.width),
                                             static_cast<float>(g_ow.height));
 
+        g_screen_w = static_cast<float>(g_ow.width);
+        g_screen_h = static_cast<float>(g_ow.height);
+
         ImGui_ImplOpenGL3_NewFrame();
         ImGui_ImplX11_NewFrame();
         ImGui::NewFrame();
@@ -483,9 +679,7 @@ static void run()
         if (g_menu_visible)
         {
             // ── Draw your menu here ───────────────────────────────────────────
-            ImGui::Begin("Menu");
-            ImGui::Text("Insert to toggle");
-            ImGui::End();
+            DrawMenu();
         }
 
         Input g_input{};

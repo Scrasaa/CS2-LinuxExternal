@@ -10,6 +10,9 @@ namespace fs = std::filesystem;
 // ─────────────────────────────────────────────
 //  Internal helper — find CS2 maps directory
 //
+//  Result is cached after the first successful
+//  resolve so repeated calls are free.
+//
 //  When running as root via sudo, $HOME is /root
 //  but the actual user's Steam is under /home/<user>.
 //  SUDO_USER contains the real username in that case.
@@ -17,6 +20,14 @@ namespace fs = std::filesystem;
 
 static fs::path find_maps_dir()
 {
+    static fs::path s_cached   = {};
+    static bool     s_resolved = false;
+
+    if (s_resolved)
+        return s_cached;
+
+    s_resolved = true;
+
     // Build a list of home directories to try
     std::vector<fs::path> a_homes;
 
@@ -53,11 +64,14 @@ static fs::path find_maps_dir()
         for (const fs::path& p : a_candidates)
         {
             if (fs::exists(p))
-                return p;
+            {
+                s_cached = p;
+                printf("[map] maps dir: '%s'\n", p.string().c_str());
+                return s_cached;
+            }
         }
     }
 
-    printf("[map] could not find CS2 maps directory\n");
     return {};
 }
 
@@ -88,7 +102,7 @@ void MapManager::update()
     if (sz_map.empty() || (sz_map == m_sz_current_map && m_b_loaded))
         return;
 
-    printf("[map] map changed: '%s'\n", sz_map.c_str());
+    //printf("[map] map changed: '%s'\n", sz_map.c_str());
 
     m_sz_current_map = sz_map;
     m_bvh            = Bvh{};
@@ -96,9 +110,6 @@ void MapManager::update()
 
     const fs::path path_geo = find_geo_path(sz_map);
     const fs::path path_vpk = find_vpk_path(sz_map);
-
-    printf("[map] geo: '%s' | exists: %d\n", path_geo.string().c_str(), (int)fs::exists(path_geo));
-    printf("[map] vpk: '%s' | exists: %d\n", path_vpk.string().c_str(), (int)fs::exists(path_vpk));
 
     if (fs::exists(path_geo))
     {
@@ -111,27 +122,28 @@ void MapManager::update()
         else
         {
             m_b_loaded = load_geo(path_geo);
-            printf("[map] load result: %d\n", (int)m_b_loaded);
+            if (m_b_loaded)
+                printf("[map] loaded from cache: '%s'\n", path_geo.string().c_str());
             return;
         }
     }
 
     if (path_vpk.empty() || !fs::exists(path_vpk))
-    {
-        printf("[map] VPK not found — cannot parse\n");
         return;
-    }
 
     const fs::path path_geo_out = path_vpk.parent_path() / (sz_map + ".geo");
-    printf("[map] parsing vpk → '%s'\n", path_geo_out.string().c_str());
 
     const bool b_parse_ok = parse_map_to_geo(m_sz_s2v_binary, path_vpk, path_geo_out);
-    printf("[map] parse result: %d\n", (int)b_parse_ok);
+    if (!b_parse_ok)
+        return;
+
+    printf("[map] parsed vpk → '%s'\n", path_geo_out.string().c_str());
 
     if (fs::exists(path_geo_out))
     {
         m_b_loaded = load_geo(path_geo_out);
-        printf("[map] load after parse: %d\n", (int)m_b_loaded);
+        if (m_b_loaded)
+            printf("[map] loaded after parse: '%s'\n", path_geo_out.string().c_str());
     }
 }
 
@@ -209,10 +221,11 @@ bool MapManager::load_geo(const fs::path& path_geo)
     };
 
     const uint64_t n_tri_count = fn_read_u64();
-    printf("[map] triangle count: %llu\n", (unsigned long long)n_tri_count);
 
     if (n_tri_count == 0u)
         return false;
+
+    printf("[map] loading %llu triangles\n", (unsigned long long)n_tri_count);
 
     for (uint64_t i = 0u; i < n_tri_count; ++i)
     {

@@ -44,11 +44,9 @@ class CESP
 public:
     void Run();
     void DrawSkeleton(ImDrawList* p_draw_list, uintptr_t game_scene_node,
-                  float screen_width, float screen_height,
                   ImU32 color = IM_COL32(255, 0, 0, 255), float thickness = 1.5f);
     void Draw2DBox(ImDrawList* p_draw_list,
                const std::unordered_map<Bones, Utils::Math::Vector>& bone_map,
-               float screen_width, float screen_height,
                const std::string& name,
                ImU32 box_color  = IM_COL32(255, 255, 255, 255),
                ImU32 text_color = IM_COL32(255, 255, 255, 255),

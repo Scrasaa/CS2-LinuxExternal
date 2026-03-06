@@ -57,6 +57,10 @@ add_executable(CS2_LinuxExternal
         Utils/BVH/dmx_parser.h
         Features/CTriggerbot.cpp
         Features/CTriggerbot.h
+        globals.h
+        Utils/Config.cpp
+        Utils/Config.h
+        Thirdparty/json.h
 )
 
 # ── Include dirs ──────────────────────────────────────────────────────────────

@@ -26,6 +26,7 @@
 #include <dirent.h>
 #include <random>
 
+#include "globals.h"
 #include "imgui.h"
 #include "../SDK/defs.h"
 
@@ -399,6 +400,13 @@ namespace Utils::Math
     {
         float x,y,z;
 
+        // Braced initializer constructor
+        constexpr Vector(float x_, float y_, float z_)
+            : x{x_}, y{y_}, z{z_} {}
+
+        // Default constructor
+        constexpr Vector() : x{0.f}, y{0.f}, z{0.f} {}
+
         // Operator+ for vector addition
         Vector operator+(const Vector& other) const
         {
@@ -420,7 +428,7 @@ namespace Utils::Math
 
     // WorldToScreen returns std::optional<ImVec2>.
     // - std::nullopt if the point is behind the camera or off-screen
-    inline std::optional<ImVec2> WorldToScreen(const Vector& world, float screen_width, float screen_height)
+    inline std::optional<ImVec2> WorldToScreen(const Vector& world)
     {
         if (!R().ReadRaw(Utils::Math::vmatrix_addr , Utils::Math::v_matrix, sizeof(Utils::Math::v_matrix)))
             return std::nullopt;
@@ -441,31 +449,32 @@ namespace Utils::Math
         float ndc_y = clip_y * inv_w;
 
         // Convert to screen space
-        float screen_x = (screen_width  / 2.0f) * (ndc_x + 1.0f);
-        float screen_y = (screen_height / 2.0f) * (1.0f - ndc_y); // y inverted
+        float screen_x = (g_screen_w  / 2.0f) * (ndc_x + 1.0f);
+        float screen_y = (g_screen_h / 2.0f) * (1.0f - ndc_y); // y inverted
 
-        if (screen_x < 0.0f || screen_x > screen_width ||
-            screen_y < 0.0f || screen_y > screen_height)
+        if (screen_x < 0.0f || screen_x > g_screen_w ||
+            screen_y < 0.0f || screen_y > g_screen_h)
             return std::nullopt;
 
         return ImVec2(screen_x, screen_y);
     }
 }
 
+
+
 namespace Utils
 {
-
     class mouse_injector
     {
     public:
-        mouse_injector(int screen_width, int screen_height)
-            : m_center_x(screen_width  / 2)
-            , m_center_y(screen_height / 2)
+        mouse_injector()
+            : m_center_x(static_cast<int>(2560)  / 2)
+            , m_center_y(static_cast<int>(1440) / 2) // Change to FLOAT??? init after overlay use real screen
         {
             m_fd = open("/dev/uinput", O_WRONLY | O_NONBLOCK);
             if (m_fd < 0)
                 throw std::runtime_error("Failed to open /dev/uinput");
-            setup_device(screen_width, screen_height);
+            setup_device(static_cast<int>(2560), static_cast<int>(1440));
         }
 
         ~mouse_injector()
@@ -482,7 +491,84 @@ namespace Utils
         float        m_f_noise_y = 0.0f;   // low-freq wobble state Y
         int          m_i_skip_ctr = 0;     // dead-frame counter
 
-        // FPS aimbot: game always locks cursor to center, so delta IS the target offset
+        void inject_delta(float a_dx, float a_dy, float a_smoothing = 1.0f)
+        {
+            auto f_gauss = [&](float stddev) -> float
+            {
+                std::normal_distribution<float> d(0.0f, stddev);
+                return d(m_rng);
+            };
+            auto f_uniform = [&](float lo, float hi) -> float
+            {
+                std::uniform_real_distribution<float> d(lo, hi);
+                return d(m_rng);
+            };
+
+            const float f_dx   = a_dx * a_smoothing;
+            const float f_dy   = a_dy * a_smoothing;
+            const float f_dist = std::hypot(f_dx, f_dy);
+
+            // ── Factor 1: Dead frames ─────────────────────────────────────────────────
+            if (m_i_skip_ctr > 0)
+            {
+                --m_i_skip_ctr;
+                return;
+            }
+            if (f_uniform(0.0f, 1.0f) < 0.05f)
+            {
+                m_i_skip_ctr = static_cast<int>(f_uniform(1.0f, 4.0f));
+                return;
+            }
+
+            // ── Factor 2: Inertia / momentum ─────────────────────────────────────────
+            constexpr float k_inertia = 0.62f;
+            m_f_vel_x = m_f_vel_x * k_inertia + f_dx * (1.0f - k_inertia);
+            m_f_vel_y = m_f_vel_y * k_inertia + f_dy * (1.0f - k_inertia);
+
+            // ── Factor 3: Low-frequency path wobble ───────────────────────────────────
+            constexpr float k_wobble_decay  = 0.80f;
+            constexpr float k_wobble_inject = 0.05f;
+            m_f_noise_x = m_f_noise_x * k_wobble_decay + f_gauss(f_dist * k_wobble_inject);
+            m_f_noise_y = m_f_noise_y * k_wobble_decay + f_gauss(f_dist * k_wobble_inject);
+
+            float f_move_x = m_f_vel_x + m_f_noise_x;
+            float f_move_y = m_f_vel_y + m_f_noise_y;
+
+            // ── Factor 4: Micro-jitter ────────────────────────────────────────────────
+            if (f_dist > 2.0f)
+            {
+                f_move_x += f_gauss(0.18f);
+                f_move_y += f_gauss(0.18f);
+            }
+
+            // ── Factor 5: Distance-adaptive speed ────────────────────────────────────
+            float f_speed_scale;
+            if      (f_dist > 80.0f) f_speed_scale = f_uniform(1.06f, 1.20f);
+            else if (f_dist <  8.0f) f_speed_scale = f_uniform(0.76f, 0.94f);
+            else                     f_speed_scale = f_uniform(0.96f, 1.04f);
+
+            f_move_x *= f_speed_scale;
+            f_move_y *= f_speed_scale;
+
+            // ── Sub-pixel accumulation ────────────────────────────────────────────────
+            m_accum_x += f_move_x;
+            m_accum_y += f_move_y;
+
+            const int ix = static_cast<int>(m_accum_x);
+            const int iy = static_cast<int>(m_accum_y);
+
+            if (ix == 0 && iy == 0)
+                return;
+
+            m_accum_x -= static_cast<float>(ix);
+            m_accum_y -= static_cast<float>(iy);
+
+            if (ix != 0) emit(EV_REL, REL_X, ix);
+            if (iy != 0) emit(EV_REL, REL_Y, iy);
+            emit(EV_SYN, SYN_REPORT, 0);
+        }
+
+         // FPS aimbot: game always locks cursor to center, so delta IS the target offset
         void aim_at(float target_x, float target_y, float smoothing = 1.0f)
         {
                   // ── RNG helpers ───────────────────────────────────────────────────────────
@@ -570,6 +656,7 @@ namespace Utils
             emit(EV_SYN, SYN_REPORT, 0);
         }
 
+
         int center_x() const { return m_center_x; }
         int center_y() const { return m_center_y; }
 
@@ -648,7 +735,7 @@ namespace Utils
         }
 
     };
-    inline mouse_injector mouse{2560, 1440};
+    inline mouse_injector mouse{};
 }
 
 extern uintptr_t g_global_vars;

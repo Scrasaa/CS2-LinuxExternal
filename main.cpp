@@ -127,7 +127,7 @@ int main()
 
     g_map_manager = MapManager
     (
-    g_global_vars,
+                g_global_vars,
     [](uintptr_t addr)                      { return R().ReadMem<uintptr_t>(addr); },
     [](uintptr_t addr, std::size_t n)
     {return R().ReadString(addr, n);},
@@ -181,11 +181,12 @@ int main()
 
     printf("Entity count %d\n", g_EntityCache.get_count());
 
-    auto local_player_controller = R().ReadMem<uintptr_t>(g_EntityCache.m_p_localplayer);
+    printf("LocalPlayer name: %s\n", R().ReadString(g_EntityCache.m_p_localplayer_controller + 0x878).c_str());
 
-    printf("LocalPlayer name: %s\n", R().ReadString(local_player_controller + 0x878).c_str());
+    g_screen_w = 2560;
+    g_screen_h = 1440;
 
-    Overlay::Start(0,0,2560, 1440); // imgui viewport, do it internally? maybe
+    Overlay::Start(0,0,2560, 1440);
 
     CUtils::Shutdown();
     return 0;

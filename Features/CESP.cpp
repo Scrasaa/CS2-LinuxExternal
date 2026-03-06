@@ -9,11 +9,14 @@
 #include <cstdint>
 #include <utility>
 
+#include "globals.h"
 #include "SDK/Helper/CEntityCache.h"
 #include "SDK/Helper/CSchemaManager.h"
 #include "Utils/Utils.h"
 
 #include "../Thirdparty/ImGUI/imgui.h"
+#include "Utils/Config.h"
+#include "Utils/BVH/map_manager.h"
 
 #define DEG2RAD(x) ((x) * (3.14159265358979323846 / 180.0))
 
@@ -103,16 +106,11 @@ std::unordered_map<Bones, Utils::Math::Vector> all_bones(const uintptr_t game_sc
 
 void CESP::Run()
 {
-    auto* p_draw_list = ImGui::GetForegroundDrawList();
-    if (!p_draw_list)
+    if (!g_config.esp.player.bEnable)
         return;
 
-    // Read every frame — NOT static const
-    const auto& io           = ImGui::GetIO();
-    const float screen_width  = io.DisplaySize.x;
-    const float screen_height = io.DisplaySize.y;
-
-    if (screen_width == 0.f || screen_height == 0.f)
+    auto* p_draw_list = ImGui::GetForegroundDrawList();
+    if (!p_draw_list)
         return;
 
     if (!g_EntityCache.refresh())
@@ -137,8 +135,9 @@ void CESP::Run()
 
         auto pawn_team = R().ReadMem<int32_t>(pawn + SCHEMA_OFFSET(C_BaseEntity, m_iTeamNum));
 
-        if (pawn_team == local_team)
-           continue;
+        if (!g_config.esp.player.bTeam)
+            if (pawn_team == local_team)
+                continue;
 
         const auto game_scene_node = R().ReadMem<uintptr_t>(pawn + SCHEMA_OFFSET(C_BaseEntity, m_pGameSceneNode));
         if (!is_valid_ptr(game_scene_node))
@@ -154,17 +153,35 @@ void CESP::Run()
         if (bone_map.empty())
             continue;
 
-        DrawSkeleton(p_draw_list, game_scene_node, screen_width, screen_height);
-        Draw2DBox(p_draw_list, bone_map, screen_width, screen_height, R().ReadString(contoller + SCHEMA_OFFSET(CBasePlayerController, m_iszPlayerName)) );
+        const auto it_head = bone_map.find(Bones::Head);
+        if (it_head == bone_map.end())
+            continue;
+
+        const auto& head_pos = it_head->second;
+
+        const auto& local_head_pos = bone_position( R().ReadMem<uintptr_t>(local_pawn + SCHEMA_OFFSET(C_BaseEntity, m_pGameSceneNode)), static_cast<uint64_t>(Bones::Head));
+
+        if (g_config.esp.player.bVisible)
+        {
+            if (!g_map_manager.is_visible(
+            { local_head_pos.x, local_head_pos.y, local_head_pos.z },
+            { head_pos.x,       head_pos.y,       head_pos.z       }))
+                return;
+        }
+
+        if (g_config.esp.player.bSkeleton)
+            DrawSkeleton(p_draw_list, game_scene_node);
+
+        if (g_config.esp.player.bDraw2DBox)
+            Draw2DBox(p_draw_list, bone_map, R().ReadString(contoller + SCHEMA_OFFSET(CBasePlayerController, m_iszPlayerName)) );
     }
-    DrawFOVIndicator(p_draw_list, local_pawn);
+    if (g_config.visuals.bDrawFovCircle)
+        DrawFOVIndicator(p_draw_list, local_pawn);
 }
 
 void CESP::DrawSkeleton(
     ImDrawList*  p_draw_list,
     uintptr_t    game_scene_node,
-    float        screen_width,
-    float        screen_height,
     ImU32        color,
     float        thickness)
 {
@@ -181,8 +198,8 @@ void CESP::DrawSkeleton(
         if (it_a == bone_map.end() || it_b == bone_map.end())
             continue;
 
-        const auto screen_a = Utils::Math::WorldToScreen(it_a->second, screen_width, screen_height);
-        const auto screen_b = Utils::Math::WorldToScreen(it_b->second, screen_width, screen_height);
+        const auto screen_a = Utils::Math::WorldToScreen(it_a->second);
+        const auto screen_b = Utils::Math::WorldToScreen(it_b->second);
 
         if (!screen_a.has_value() || !screen_b.has_value())
             continue;
@@ -194,8 +211,6 @@ void CESP::DrawSkeleton(
 void CESP::Draw2DBox(
     ImDrawList*                                        p_draw_list,
     const std::unordered_map<Bones, Utils::Math::Vector>& bone_map,
-    float                                              screen_width,
-    float                                              screen_height,
     const std::string&                                 name,
     ImU32                                              box_color,
     ImU32                                              text_color,
@@ -212,7 +227,7 @@ void CESP::Draw2DBox(
         if (it == bone_map.end())
             continue;
 
-        const auto screen = Utils::Math::WorldToScreen(it->second, screen_width, screen_height);
+        const auto screen = Utils::Math::WorldToScreen(it->second);
         if (!screen.has_value())
             continue;
 
@@ -257,8 +272,8 @@ void CESP::DrawFOVIndicator(ImDrawList *p_draw_list, uintptr_t local_pawn)
     // Draw the circle
     p_draw_list->AddCircle
     (
-        {(2560 / 2), (1440 / 2)},
-        100,
+        {(g_screen_w / 2), (g_screen_h / 2)},
+        g_config.aimbot.fRadius,
         IM_COL32(255, 0, 0, 200), // Red with transparency
         64,
         1.5f
