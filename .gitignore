@@ -1,11 +1,10 @@
-# CMake build folders
-build/
+# Ignore CMake build folders
 cmake-build-debug/
 CMakeFiles/
 CMakeCache.txt
 *.cmake.user
 
-# Third-party binaries
+# Ignore third-party binaries
 Thirdparty/
 
 # Editor and OS files
@@ -15,4 +14,4 @@ Thirdparty/
 *.tmp
 *.DS_Store
 .idea/
-.vscode/Thirdparty/
+.vscode/
