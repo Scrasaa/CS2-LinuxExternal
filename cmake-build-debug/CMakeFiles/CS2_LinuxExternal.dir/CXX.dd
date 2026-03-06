@@ -1,7 +1,0 @@
-ninja_dyndep_version = 1.0
-build CMakeFiles/CS2_LinuxExternal.dir/main.cpp.o: dyndep
-
-build CMakeFiles/CS2_LinuxExternal.dir/Utils/Utils.cpp.o: dyndep
-
-build CMakeFiles/CS2_LinuxExternal.dir/SDK/Helper/CSchemaManager.cpp.o: dyndep
-

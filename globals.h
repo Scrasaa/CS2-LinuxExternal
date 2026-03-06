@@ -1,0 +1,8 @@
+//
+// Created by scrasa on 06.03.26.
+//
+
+#ifndef CS2_LINUXEXTERNAL_GLOBALS_H
+#define CS2_LINUXEXTERNAL_GLOBALS_H
+
+#endif //CS2_LINUXEXTERNAL_GLOBALS_H
