@@ -19,21 +19,21 @@ std::optional<uintptr_t> get_convar(
     if (!qw_convar_interface)
         return std::nullopt;
 
-    const uintptr_t qw_objects =
+    const auto qw_objects =
         R().ReadMem<uintptr_t>(qw_convar_interface + convar_layout::k_object_list_offset);
 
-    const uint32_t dw_count =
+    const auto dw_count =
         R().ReadMem<uint32_t>(qw_convar_interface + convar_layout::k_object_count_offset);
 
     for (uint32_t i = 0; i < dw_count; ++i)
     {
-        const uintptr_t qw_object =
+        const auto qw_object =
             R().ReadMem<uintptr_t>(qw_objects + i * convar_layout::k_object_stride);
 
         if (!qw_object)
             break;
 
-        const uintptr_t   qw_name_ptr = R().ReadMem<uintptr_t>(qw_object);
+        const auto   qw_name_ptr = R().ReadMem<uintptr_t>(qw_object);
         const std::string sz_entry    = R().ReadString(qw_name_ptr);
 
         if (sz_entry == sz_name)

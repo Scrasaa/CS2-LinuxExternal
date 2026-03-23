@@ -109,7 +109,7 @@ int main()
 
     printf("EntitySystem 0x%llx\n", static_cast<unsigned long long>(entity_system));
 
-    const auto pattern_hit_global_vars = R().PatternScan("libclient.so", "48 8D 05 ? ? ? ? 48 8B 00 8B 50 ? E9");
+    const auto pattern_hit_global_vars = R().PatternScan("libclient.so", "48 8D 05 ? ? ? ? 66 0F EF DB F3 0F 10 83");
     if (!pattern_hit_global_vars)
     {
         std::cerr << "[-] Pattern for pattern_hit_global_vars not found in libclient.so.\n";
@@ -141,7 +141,6 @@ int main()
 
     if (!interface_offset.has_value())
     {
-        // handle error    {
         std::cerr << "[-] Failed to resolve entity_list.\n";
         CUtils::Shutdown();
         return 1;
@@ -151,7 +150,6 @@ int main()
 
     if (!entity_interface)
     {
-        // handle error    {
         std::cerr << "[-] Failed to resolve entity_interface.\n";
         CUtils::Shutdown();
         return 1;

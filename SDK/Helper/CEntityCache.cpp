@@ -26,7 +26,6 @@
 #include "CSchemaManager.h"
 #include "Utils/Utils.h"
 
-
 CEntityCache::CEntityCache(uintptr_t a_p_entity_list)
     : m_p_entity_list(a_p_entity_list)
 {
@@ -49,13 +48,13 @@ uintptr_t CEntityCache::resolve_entity_from_handle(uint32_t handle) const
     const uint32_t bucket = index >> 9;
     const uint32_t offset = index & 0x1FF;
 
-    const uintptr_t chunk = R().ReadMem<uintptr_t>(
+    const auto chunk = R().ReadMem<uintptr_t>(
         m_p_entity_list + sizeof(uintptr_t) * bucket);
 
     if (!chunk)
         return 0;
 
-    const uintptr_t entity = R().ReadMem<uintptr_t>(
+    const auto entity = R().ReadMem<uintptr_t>(
         chunk + k_entity_identity_size * offset);
 
     return entity;
@@ -66,13 +65,13 @@ uintptr_t CEntityCache::read_entity_at_index(uint32_t a_index) const
     const uint32_t  l_bucket_index    = a_index >> 9;
     const uint32_t  l_index_in_bucket = a_index & 0x1FF;
 
-    const uintptr_t lp_chunk = R().ReadMem<uintptr_t>(
+    const auto lp_chunk = R().ReadMem<uintptr_t>(
         m_p_entity_list + sizeof(uintptr_t) * l_bucket_index);
 
     if (!is_valid_ptr(lp_chunk))
         return 0;
 
-    const uintptr_t lp_entity = R().ReadMem<uintptr_t>(
+    const auto lp_entity = R().ReadMem<uintptr_t>(
         lp_chunk + k_entity_identity_size * l_index_in_bucket);
 
     return is_valid_ptr(lp_entity) ? lp_entity : 0;
@@ -97,13 +96,13 @@ bool CEntityCache::refresh()
         const uint32_t  l_bucket_index    = i >> 9;
         const uint32_t  l_index_in_bucket = i & 0x1FF;
 
-        const uintptr_t lp_chunk = R().ReadMem<uintptr_t>(
+        const auto lp_chunk = R().ReadMem<uintptr_t>(
             m_p_entity_list + sizeof(uintptr_t) * l_bucket_index);
 
         if (!is_valid_ptr(lp_chunk))
             continue;
 
-        const uintptr_t lp_instance = R().ReadMem<uintptr_t>(
+        const auto lp_instance = R().ReadMem<uintptr_t>(
             lp_chunk + k_entity_identity_size * l_index_in_bucket);
 
         if (!is_valid_ptr(lp_instance))
@@ -111,12 +110,12 @@ bool CEntityCache::refresh()
 
         // Read handle from identity (+0x10), validate slot matches
         const uintptr_t lp_identity = lp_chunk + k_entity_identity_size * l_index_in_bucket;
-        const uint32_t  l_handle    = R().ReadMem<uint32_t>(lp_identity + k_identity_handle);
+        const auto  l_handle    = R().ReadMem<uint32_t>(lp_identity + k_identity_handle);
 
         if ((l_handle & 0x7FFF) != i)
             continue;
 
-        const uintptr_t lp_controller = R().ReadMem<uintptr_t>(lp_identity);
+        const auto lp_controller = R().ReadMem<uintptr_t>(lp_identity);
         if (!is_valid_ptr(lp_controller))
             continue;
 
@@ -156,7 +155,7 @@ std::vector<uintptr_t> CEntityCache::get_pawns() const
 
     for (const uintptr_t lp_controller : m_entities)
     {
-        const uint32_t  l_pawn_handle = R().ReadMem<uint32_t>(
+        const auto  l_pawn_handle = R().ReadMem<uint32_t>(
             lp_controller + SCHEMA_OFFSET(CBasePlayerController, m_hPawn));
 
         const uintptr_t lp_pawn = resolve_entity_from_handle(l_pawn_handle);
@@ -179,7 +178,7 @@ std::vector<CEntityCache::EntityPair> CEntityCache::get_entity_pairs() const
 
     for (const uintptr_t lp_controller : m_entities)
     {
-        const uint32_t  l_pawn_handle = R().ReadMem<uint32_t>(
+        const auto  l_pawn_handle = R().ReadMem<uint32_t>(
             lp_controller + SCHEMA_OFFSET(CBasePlayerController, m_hPawn));
 
         const uintptr_t lp_pawn = resolve_entity_from_handle(l_pawn_handle);
@@ -222,13 +221,13 @@ CEntityCache::IterResult CEntityCache::iterate(
 
     while (is_valid_ptr(lp_identity))
     {
-        const uint32_t l_handle = R().ReadMem<uint32_t>(lp_identity + k_identity_handle);
+        const auto l_handle = R().ReadMem<uint32_t>(lp_identity + k_identity_handle);
 
         if ((l_handle & 0xFFFF) != 0xFFFF)
         {
             // Resolve m_pInstance (offset 0x00 on CEntityIdentity)
             // so callers receive the same pointer type as get_controllers() etc.
-            const uintptr_t lp_instance = R().ReadMem<uintptr_t>(lp_identity);
+            const auto lp_instance = R().ReadMem<uintptr_t>(lp_identity);
 
             if (is_valid_ptr(lp_instance))
             {
@@ -250,15 +249,15 @@ std::string CEntityCache::get_classname(uintptr_t a_p_entity_instance) const
     if (!is_valid_ptr(a_p_entity_instance))
         return {};
 
-    const uintptr_t lp_vtable = R().ReadMem<uintptr_t>(a_p_entity_instance);
+    const auto lp_vtable = R().ReadMem<uintptr_t>(a_p_entity_instance);
     if (!is_valid_ptr(lp_vtable))
         return {};
 
-    const uintptr_t lp_rtti = R().ReadMem<uintptr_t>(lp_vtable - 0x8);
+    const auto lp_rtti = R().ReadMem<uintptr_t>(lp_vtable - 0x8);
     if (!is_valid_ptr(lp_rtti))
         return {};
 
-    const uintptr_t lp_name = R().ReadMem<uintptr_t>(lp_rtti + 0x8);
+    const auto lp_name = R().ReadMem<uintptr_t>(lp_rtti + 0x8);
     if (!is_valid_str_ptr(lp_name))
         return {};
 
@@ -286,7 +285,7 @@ uintptr_t CEntityCache::get_controller_at_index(uint32_t a_index) const
     const uint32_t  l_bucket_index    = a_index >> 9;
     const uint32_t  l_index_in_bucket = a_index & 0x1FF;
 
-    const uintptr_t lp_chunk = R().ReadMem<uintptr_t>(
+    const auto lp_chunk = R().ReadMem<uintptr_t>(
         m_p_entity_list + sizeof(uintptr_t) * l_bucket_index);
 
     if (!is_valid_ptr(lp_chunk))
@@ -295,11 +294,11 @@ uintptr_t CEntityCache::get_controller_at_index(uint32_t a_index) const
     const uintptr_t lp_identity = lp_chunk + k_entity_identity_size * l_index_in_bucket;
 
     // Validate handle slot matches requested index
-    const uint32_t l_handle = R().ReadMem<uint32_t>(lp_identity + k_identity_handle);
+    const auto l_handle = R().ReadMem<uint32_t>(lp_identity + k_identity_handle);
     if ((l_handle & 0x7FFF) != a_index)
         return 0;
 
-    const uintptr_t lp_controller = R().ReadMem<uintptr_t>(lp_identity);
+    const auto lp_controller = R().ReadMem<uintptr_t>(lp_identity);
     if (!is_valid_ptr(lp_controller))
         return 0;
 

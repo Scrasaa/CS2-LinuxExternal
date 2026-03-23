@@ -36,8 +36,8 @@ void CSchemaManager::Init(uintptr_t schema_system)
 
     for (const auto& [scope_name, p_scope] : scopes)
     {
-        const uint16_t  class_count = R().ReadMem<uint16_t>(p_scope + k_scope_class_count);
-        const uintptr_t class_table = R().ReadMem<uintptr_t>(p_scope + k_scope_class_table);
+        const auto  class_count = R().ReadMem<uint16_t>(p_scope + k_scope_class_count);
+        const auto class_table = R().ReadMem<uintptr_t>(p_scope + k_scope_class_table);
 
         if (class_count > 0 && is_valid_ptr(class_table))
         {
@@ -45,11 +45,11 @@ void CSchemaManager::Init(uintptr_t schema_system)
             {
                 const uintptr_t entry_base = class_table
                     + static_cast<uintptr_t>(j) * k_class_entry_stride;
-                const uintptr_t p_binding  = R().ReadMem<uintptr_t>(entry_base + k_class_entry_ptr_off);
+                const auto p_binding  = R().ReadMem<uintptr_t>(entry_base + k_class_entry_ptr_off);
                 if (!is_valid_ptr(p_binding))
                     continue;
 
-                const uintptr_t p_class = R().ReadMem<uintptr_t>(p_binding + k_binding_class_ptr);
+                const auto p_class = R().ReadMem<uintptr_t>(p_binding + k_binding_class_ptr);
                 register_class(p_class, scope_name);
             }
         }
@@ -95,8 +95,8 @@ bool CSchemaManager::collect_scopes(
         return false;
 
     const uintptr_t vec_addr     = m_schema_system + k_system_scope_vec;
-    const uintptr_t p_scope_data = R().ReadMem<uintptr_t>(vec_addr + k_utlvec_ptr);
-    const int32_t   scope_count  = R().ReadMem<int32_t>(vec_addr + k_utlvec_size);
+    const auto      p_scope_data = R().ReadMem<uintptr_t>(vec_addr + k_utlvec_ptr);
+    const auto      scope_count  = R().ReadMem<int32_t>(vec_addr + k_utlvec_size);
 
     if (!is_valid_ptr(p_scope_data) || scope_count <= 0 || scope_count > 64)
         return false;
@@ -105,7 +105,7 @@ bool CSchemaManager::collect_scopes(
 
     for (int32_t i = 0; i < scope_count; ++i)
     {
-        const uintptr_t p_scope = R().ReadMem<uintptr_t>(
+        const auto p_scope = R().ReadMem<uintptr_t>(
             p_scope_data + static_cast<uintptr_t>(i) * sizeof(uintptr_t));
 
         if (!is_valid_ptr(p_scope))
@@ -138,8 +138,8 @@ void CSchemaManager::collect_fields(uintptr_t p_class, std::vector<SchemaField>&
     if (!is_valid_ptr(p_class))
         return;
 
-    const int16_t   field_count = R().ReadMem<int16_t>(p_class + k_class_field_size);
-    const uintptr_t p_fields    = R().ReadMem<uintptr_t>(p_class + k_class_field_arr);
+    const auto   field_count = R().ReadMem<int16_t>(p_class + k_class_field_size);
+    const auto p_fields    = R().ReadMem<uintptr_t>(p_class + k_class_field_arr);
 
     if (field_count <= 0 || field_count > 20000 || !is_valid_ptr(p_fields))
         return;
@@ -147,8 +147,8 @@ void CSchemaManager::collect_fields(uintptr_t p_class, std::vector<SchemaField>&
     for (int16_t i = 0; i < field_count; ++i)
     {
         const uintptr_t p_field      = p_fields + static_cast<uintptr_t>(i) * k_field_stride;
-        const uintptr_t p_field_name = R().ReadMem<uintptr_t>(p_field + k_field_name_ptr);
-        const int32_t   inh_offset   = R().ReadMem<int32_t>(p_field + k_field_inh_offset);
+        const auto p_field_name = R().ReadMem<uintptr_t>(p_field + k_field_name_ptr);
+        const auto   inh_offset   = R().ReadMem<int32_t>(p_field + k_field_inh_offset);
 
         if (!is_valid_str_ptr(p_field_name))
             continue;
@@ -169,7 +169,7 @@ void CSchemaManager::register_class(uintptr_t p_class, const std::string& scope_
     if (!is_valid_ptr(p_class))
         return;
 
-    const uintptr_t p_name_ptr = R().ReadMem<uintptr_t>(p_class + k_class_name_ptr);
+    const auto p_name_ptr = R().ReadMem<uintptr_t>(p_class + k_class_name_ptr);
     if (!is_valid_str_ptr(p_name_ptr))
         return;
 
@@ -200,8 +200,8 @@ void CSchemaManager::register_class(uintptr_t p_class, const std::string& scope_
 // ─────────────────────────────────────────────────────────────────────────────
 void CSchemaManager::walk_hash(uintptr_t p_hash, const std::string& scope_name)
 {
-    const int32_t   n_blocks_alloc  = R().ReadMem<int32_t>(p_hash + k_pool_blocks_allocated);
-    const int32_t   n_peak_alloc    = R().ReadMem<int32_t>(p_hash + k_pool_peak_alloc);
+    const auto   n_blocks_alloc  = R().ReadMem<int32_t>(p_hash + k_pool_blocks_allocated);
+    const auto   n_peak_alloc    = R().ReadMem<int32_t>(p_hash + k_pool_peak_alloc);
     const int32_t   n_unalloc_count = n_peak_alloc - n_blocks_alloc;
 
     std::vector<uintptr_t> seen;
@@ -213,11 +213,11 @@ void CSchemaManager::walk_hash(uintptr_t p_hash, const std::string& scope_name)
     for (int32_t b = 0; b < k_bucket_count; ++b)
     {
         //const uintptr_t p_bucket = p_buckets + static_cast<uintptr_t>(b) * k_bucket_stride;
-        uintptr_t p_node = R().ReadMem<uintptr_t>(p_bucket_array + k_bucket_array_start + static_cast<uintptr_t>(b) * k_bucket_stride);
+        auto p_node = R().ReadMem<uintptr_t>(p_bucket_array + k_bucket_array_start + static_cast<uintptr_t>(b) * k_bucket_stride);
 
         while (is_valid_ptr(p_node) && found < n_blocks_alloc)
         {
-            const uintptr_t p_class = R().ReadMem<uintptr_t>(p_node + k_node_data);
+            const auto p_class = R().ReadMem<uintptr_t>(p_node + k_node_data);
             if (is_valid_ptr(p_class))
             {
                 seen.push_back(p_class);
@@ -231,12 +231,12 @@ void CSchemaManager::walk_hash(uintptr_t p_hash, const std::string& scope_name)
     // ── Unallocated blob list ─────────────────────────────────────────────────
     if (n_unalloc_count > 0)
     {
-        uintptr_t p_blob  = R().ReadMem<uintptr_t>(p_hash + k_pool_free_head);
+        auto p_blob  = R().ReadMem<uintptr_t>(p_hash + k_pool_free_head);
         int32_t   ufound  = 0;
 
         while (is_valid_ptr(p_blob) && ufound < n_unalloc_count)
         {
-            const uintptr_t p_binding = R().ReadMem<uintptr_t>(p_blob + k_blob_data);
+            const auto p_binding = R().ReadMem<uintptr_t>(p_blob + k_blob_data);
             if (is_valid_ptr(p_binding))
             {
                 const bool already_seen =
@@ -244,7 +244,7 @@ void CSchemaManager::walk_hash(uintptr_t p_hash, const std::string& scope_name)
 
                 if (!already_seen)
                 {
-                    const uintptr_t p_class = R().ReadMem<uintptr_t>(p_binding + k_binding_class_ptr);
+                    const auto p_class = R().ReadMem<uintptr_t>(p_binding + k_binding_class_ptr);
                     register_class(p_class, scope_name);
                     ++ufound;
                 }
@@ -288,8 +288,8 @@ void CSchemaManager::write_base_classes(std::ofstream& f,
     for (uint8_t b = 0; b < base_count; ++b)
     {
         const uintptr_t p_desc     = p_base_arr + b * k_base_stride;
-        const uint32_t  inh_off    = R().ReadMem<uint32_t>(p_desc + k_base_inh_offset);
-        const uintptr_t p_base_cls = R().ReadMem<uintptr_t>(p_desc + k_base_class_ptr);
+        const auto  inh_off    = R().ReadMem<uint32_t>(p_desc + k_base_inh_offset);
+        const auto p_base_cls = R().ReadMem<uintptr_t>(p_desc + k_base_class_ptr);
 
         if (!is_valid_ptr(p_base_cls))
         {
@@ -298,7 +298,7 @@ void CSchemaManager::write_base_classes(std::ofstream& f,
             continue;
         }
 
-        const uintptr_t p_base_name = R().ReadMem<uintptr_t>(p_base_cls + k_class_name_ptr);
+        const auto p_base_name = R().ReadMem<uintptr_t>(p_base_cls + k_class_name_ptr);
         const std::string base_name = is_valid_ptr(p_base_name) ? remote_str(p_base_name) : "?";
 
         f << prefix
@@ -313,7 +313,7 @@ void CSchemaManager::write_base_classes(std::ofstream& f,
 // ─────────────────────────────────────────────────────────────────────────────
 void CSchemaManager::write_class_block(std::ofstream& f, const SchemaClass& sc) const
 {
-    const uintptr_t p_base_arr = R().ReadMem<uintptr_t>(sc.p_remote + k_class_base_arr);
+    const auto p_base_arr = R().ReadMem<uintptr_t>(sc.p_remote + k_class_base_arr);
 
     f << "// class " << sc.name
       << "  [size=0x" << std::hex << sc.class_size << std::dec
@@ -353,8 +353,8 @@ void CSchemaManager::DumpAllScopes(const std::string& path) const
     int32_t idx = 0;
     for (const auto& [name, p_scope] : scopes)
     {
-        const uint16_t  class_count = R().ReadMem<uint16_t>(p_scope + k_scope_class_count);
-        const uintptr_t class_table = R().ReadMem<uintptr_t>(p_scope + k_scope_class_table);
+        const auto  class_count = R().ReadMem<uint16_t>(p_scope + k_scope_class_count);
+        const auto class_table = R().ReadMem<uintptr_t>(p_scope + k_scope_class_table);
 
         f << std::left
           << "[" << std::setw(2) << idx++ << "] "
@@ -388,8 +388,8 @@ void CSchemaManager::DumpAllClasses(const std::string& path) const
 
     for (const auto& [scope_name, p_scope] : scopes)
     {
-        const uint16_t  class_count = R().ReadMem<uint16_t>(p_scope + k_scope_class_count);
-        const uintptr_t class_table = R().ReadMem<uintptr_t>(p_scope + k_scope_class_table);
+        const auto  class_count = R().ReadMem<uint16_t>(p_scope + k_scope_class_count);
+        const auto class_table = R().ReadMem<uintptr_t>(p_scope + k_scope_class_table);
 
         const std::string enum_suffix = scope_name.substr(0, scope_name.find('.'));
 
@@ -399,13 +399,13 @@ void CSchemaManager::DumpAllClasses(const std::string& path) const
         auto write_class_line = [&](uintptr_t p_class)
         {
             if (!is_valid_ptr(p_class)) return;
-            const uintptr_t p_name = R().ReadMem<uintptr_t>(p_class + k_class_name_ptr);
+            const auto p_name = R().ReadMem<uintptr_t>(p_class + k_class_name_ptr);
             if (!is_valid_ptr(p_name)) return;
             const std::string name = remote_str(p_name);
             if (name.empty()) return;
 
-            const int32_t  sz    = R().ReadMem<int32_t>(p_class + k_class_sizeof);
-            const int16_t  nf    = R().ReadMem<int16_t>(p_class + k_class_field_size);
+            const auto  sz    = R().ReadMem<int32_t>(p_class + k_class_sizeof);
+            const auto  nf    = R().ReadMem<int16_t>(p_class + k_class_field_size);
 
             f << "    " << std::left << std::setw(60) << name
               << " // size=0x" << std::hex << sz << std::dec
@@ -418,9 +418,9 @@ void CSchemaManager::DumpAllClasses(const std::string& path) const
             {
                 const uintptr_t entry_base = class_table
                     + static_cast<uintptr_t>(j) * k_class_entry_stride;
-                const uintptr_t p_binding  = R().ReadMem<uintptr_t>(entry_base + k_class_entry_ptr_off);
+                const auto p_binding  = R().ReadMem<uintptr_t>(entry_base + k_class_entry_ptr_off);
                 if (!is_valid_ptr(p_binding)) continue;
-                const uintptr_t p_class    = R().ReadMem<uintptr_t>(p_binding + k_binding_class_ptr);
+                const auto p_class    = R().ReadMem<uintptr_t>(p_binding + k_binding_class_ptr);
                 write_class_line(p_class);
             }
         }
