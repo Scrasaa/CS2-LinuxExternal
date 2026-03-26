@@ -461,8 +461,6 @@ namespace Utils::Math
     }
 }
 
-
-
 namespace Utils
 {
     class mouse_injector
@@ -584,8 +582,8 @@ namespace Utils
                 return d(m_rng);
             };
 
-            const float f_dx   = (target_x - m_center_x) * smoothing;
-            const float f_dy   = (target_y - m_center_y) * smoothing;
+            const float f_dx   = (target_x - static_cast<float>(m_center_x)) * smoothing;
+            const float f_dy   = (target_y - static_cast<float>(m_center_y)) * smoothing;
             const float f_dist = std::hypot(f_dx, f_dy);
 
             // ── Factor 1: Dead frames (~5 % of ticks) ────────────────────────────────
@@ -658,8 +656,8 @@ namespace Utils
         }
 
 
-        int center_x() const { return m_center_x; }
-        int center_y() const { return m_center_y; }
+        [[nodiscard]] int center_x() const { return m_center_x; }
+        [[nodiscard]] int center_y() const { return m_center_y; }
 
         void mouse1() { click(BTN_LEFT);  }
         void mouse2() { click(BTN_RIGHT); }
@@ -738,7 +736,5 @@ namespace Utils
     };
     inline mouse_injector mouse{};
 }
-
-extern uintptr_t g_global_vars;
 
 #endif // CS2_LINUXEXTERNAL_UTILS_H

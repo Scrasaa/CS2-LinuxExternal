@@ -15,8 +15,7 @@
 #include "Utils/BVH/map_manager.h"
 
 CEntityCache g_EntityCache{0};
-MapManager g_map_manager;
-uintptr_t g_global_vars = 0;
+MapManager g_MapManager;
 
 int main()
 {
@@ -117,18 +116,18 @@ int main()
         return 1;
     }
 
-    g_global_vars = R().GetAbsoluteAddress(pattern_hit_global_vars, 0x3, 0x7);
+    g_GlobalVars = R().GetAbsoluteAddress(pattern_hit_global_vars, 0x3, 0x7);
 
-    if (!g_global_vars)
+    if (!g_GlobalVars)
     {
         std::cerr << "[-] Failed to resolve g_global_vars.\n";
         CUtils::Shutdown();
         return 1;
     }
 
-    g_map_manager = MapManager
+    g_MapManager = MapManager
     (
-                g_global_vars,
+                g_GlobalVars,
     [](uintptr_t addr)                      { return R().ReadMem<uintptr_t>(addr); },
     [](uintptr_t addr, std::size_t n)
     {return R().ReadString(addr, n);},
@@ -185,7 +184,7 @@ int main()
     g_screen_w = 2560;
     g_screen_h = 1440;
 
-    if (!resolve_convar_offsets(g_offsets, "libtier0.so"))
+    if (!ResolveConvarOffsets(g_offsets, "libtier0.so"))
     {
         std::cerr << "[-] Failed to resolve g_EntityCache.m_p_localplayer.\n";
         CUtils::Shutdown();

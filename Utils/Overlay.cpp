@@ -707,8 +707,8 @@ static void run()
         // in your loop:
         g_input.update(fn_read, u64ButtonBase);
 
-        g_map_manager.update();
-        g_is_ffa = is_ffa(g_offsets);
+        g_MapManager.update();
+        g_is_ffa = IsFFA(g_offsets);
         F::ESP.Run();
         if (g_input.is_key_pressed(CS2KeyCode::MouseLeft)) F::Aimbot.Run();
         if (g_input.is_key_pressed(CS2KeyCode::Mouse5)) F::Triggerbot.Run();

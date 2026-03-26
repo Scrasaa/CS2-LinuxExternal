@@ -45,4 +45,4 @@ private:
     bool        m_b_loaded = false;
 };
 
-extern MapManager g_map_manager;
+extern MapManager g_MapManager;

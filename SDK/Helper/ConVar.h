@@ -47,13 +47,13 @@ struct Offsets
 //  Function declarations  (implemented in ConVar.cpp)
 // ─────────────────────────────────────────────────────────────────────────────
 
-[[nodiscard]] std::optional<uintptr_t> get_convar(
+[[nodiscard]] std::optional<uintptr_t> GetConvar(
     uintptr_t        qw_convar_interface,
     std::string_view sz_name);
 
-[[nodiscard]] bool resolve_convar_offsets(
+[[nodiscard]] bool ResolveConvarOffsets(
     Offsets&           offsets,
     const std::string& sz_tier0_module);
 
-[[nodiscard]] float   get_sensitivity(const Offsets& offsets);
-[[nodiscard]] bool    is_ffa(const Offsets& offsets);
+[[nodiscard]] float   GetSensitivity(const Offsets& offsets);
+[[nodiscard]] bool    IsFFA(const Offsets& offsets);

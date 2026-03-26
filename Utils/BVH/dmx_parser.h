@@ -140,7 +140,7 @@ public:
     glm::vec2 read_vec2() { return { read<float>(), read<float>() }; }
     glm::vec3 read_vec3() { return { read<float>(), read<float>(), read<float>() }; }
     glm::vec4 read_vec4() { return { read<float>(), read<float>(), read<float>(), read<float>() }; }
-    glm::quat read_quat() { float x=read<float>(),y=read<float>(),z=read<float>(),w=read<float>(); return {w,x,y,z}; }
+    glm::quat read_quat() { auto x=read<float>(),y=read<float>(),z=read<float>(),w=read<float>(); return {w,x,y,z}; }
     glm::mat4 read_mat4()
     {
         glm::mat4 m;
@@ -172,14 +172,14 @@ inline std::unordered_map<std::string, Element> parse(
     r.read<int32_t>();
 
     // String table
-    const int32_t n_string_count = r.read<int32_t>();
+    const auto n_string_count = r.read<int32_t>();
     std::vector<std::string> a_strings;
     a_strings.reserve(static_cast<std::size_t>(n_string_count));
     for (int32_t i = 0; i < n_string_count; ++i)
         a_strings.push_back(r.read_string());
 
     // Element stubs
-    const int32_t n_elem_count = r.read<int32_t>();
+    const auto n_elem_count = r.read<int32_t>();
     std::vector<Element> a_elements;
     a_elements.reserve(static_cast<std::size_t>(n_elem_count));
     for (int32_t i = 0; i < n_elem_count; ++i)
@@ -194,18 +194,18 @@ inline std::unordered_map<std::string, Element> parse(
     // Attribute data
     for (auto& elem : a_elements)
     {
-        const int32_t n_attr_count = r.read<int32_t>();
+        const auto n_attr_count = r.read<int32_t>();
         for (int32_t i = 0; i < n_attr_count; ++i)
         {
             const std::string sz_name = a_strings[static_cast<std::size_t>(r.read<int32_t>())];
-            const uint8_t     n_kind  = r.read<uint8_t>();
+            const auto     n_kind  = r.read<uint8_t>();
 
             AttributeValue val;
             switch (n_kind)
             {
                 case 1:
                 {
-                    const int32_t idx = r.read<int32_t>();
+                    const auto idx = r.read<int32_t>();
                     val = (idx == -1) ? AttrElement{std::nullopt} : AttrElement{idx};
                     break;
                 }
@@ -213,7 +213,7 @@ inline std::unordered_map<std::string, Element> parse(
                 case 3:  val = r.read<float>();    break;
                 case 4:  val = r.read<uint8_t>() != 0u; break;
                 case 5:  val = a_strings[static_cast<std::size_t>(r.read<int32_t>())]; break;
-                case 6:  { const int32_t n = r.read<int32_t>(); val = r.read_bytes(static_cast<std::size_t>(n)); break; }
+                case 6:  { const auto n = r.read<int32_t>(); val = r.read_bytes(static_cast<std::size_t>(n)); break; }
                 case 7:  val = r.read<uint32_t>();  break;
                 case 8:  val = r.read<uint32_t>(); break;
                 case 9:  val = r.read_vec2(); break;
@@ -227,31 +227,31 @@ inline std::unordered_map<std::string, Element> parse(
 
                 case 33:
                 {
-                    const int32_t n = r.read<int32_t>();
+                    const auto n = r.read<int32_t>();
                     AttrElementArray arr;
                     arr.reserve(static_cast<std::size_t>(n));
                     for (int32_t j = 0; j < n; ++j)
                     {
-                        const int32_t idx = r.read<int32_t>();
+                        const auto idx = r.read<int32_t>();
                         arr.push_back(idx == -1 ? std::nullopt : std::optional<int32_t>{idx});
                     }
                     val = std::move(arr);
                     break;
                 }
-                case 34: { const int32_t n=r.read<int32_t>(); AttrIntArray a; a.reserve(n); for(int32_t j=0;j<n;++j) a.push_back(r.read<int32_t>()); val=std::move(a); break; }
-                case 35: { const int32_t n=r.read<int32_t>(); AttrFloatArray a; a.reserve(n); for(int32_t j=0;j<n;++j) a.push_back(r.read<float>()); val=std::move(a); break; }
-                case 36: { const int32_t n=r.read<int32_t>(); AttrBoolArray a; a.reserve(n); for(int32_t j=0;j<n;++j) a.push_back(r.read<uint8_t>()!=0u); val=std::move(a); break; }
-                case 37: { const int32_t n=r.read<int32_t>(); AttrStringArray a; a.reserve(n); for(int32_t j=0;j<n;++j) a.push_back(r.read_string()); val=std::move(a); break; }
-                case 39: { const int32_t n=r.read<int32_t>(); AttrIntArray a; a.reserve(n); for(int32_t j=0;j<n;++j) a.push_back(r.read<int32_t>()); val=std::move(a); break; }
-                case 40: { const int32_t n=r.read<int32_t>(); AttrIntArray a; a.reserve(n); for(int32_t j=0;j<n;++j) a.push_back(static_cast<int32_t>(r.read<uint32_t>())); val=std::move(a); break; }
-                case 41: { const int32_t n=r.read<int32_t>(); AttrVec2Array a; a.reserve(n); for(int32_t j=0;j<n;++j) a.push_back(r.read_vec2()); val=std::move(a); break; }
-                case 42: { const int32_t n=r.read<int32_t>(); AttrVec3Array a; a.reserve(n); for(int32_t j=0;j<n;++j) a.push_back(r.read_vec3()); val=std::move(a); break; }
-                case 43: { const int32_t n=r.read<int32_t>(); AttrVec3Array a; a.reserve(n); for(int32_t j=0;j<n;++j) a.push_back(r.read_vec3()); val=std::move(a); break; }
-                case 44: { const int32_t n=r.read<int32_t>(); AttrVec4Array a; a.reserve(n); for(int32_t j=0;j<n;++j) a.push_back(r.read_vec4()); val=std::move(a); break; }
-                case 45: { const int32_t n=r.read<int32_t>(); AttrQuatArray a; a.reserve(n); for(int32_t j=0;j<n;++j) a.push_back(r.read_quat()); val=std::move(a); break; }
-                case 46: { const int32_t n=r.read<int32_t>(); AttrMat4Array a; a.reserve(n); for(int32_t j=0;j<n;++j) a.push_back(r.read_mat4()); val=std::move(a); break; }
-                case 47: { const int32_t n=r.read<int32_t>(); val=r.read_bytes(static_cast<std::size_t>(n)); break; }
-                case 48: { const int32_t n=r.read<int32_t>(); AttrU64Array a; a.reserve(n); for(int32_t j=0;j<n;++j) a.push_back(r.read<uint64_t>()); val=std::move(a); break; }
+                case 34: { const auto n=r.read<int32_t>(); AttrIntArray a; a.reserve(n); for(int32_t j=0;j<n;++j) a.push_back(r.read<int32_t>()); val=std::move(a); break; }
+                case 35: { const auto n=r.read<int32_t>(); AttrFloatArray a; a.reserve(n); for(int32_t j=0;j<n;++j) a.push_back(r.read<float>()); val=std::move(a); break; }
+                case 36: { const auto n=r.read<int32_t>(); AttrBoolArray a; a.reserve(n); for(int32_t j=0;j<n;++j) a.push_back(r.read<uint8_t>()!=0u); val=std::move(a); break; }
+                case 37: { const auto n=r.read<int32_t>(); AttrStringArray a; a.reserve(n); for(int32_t j=0;j<n;++j) a.push_back(r.read_string()); val=std::move(a); break; }
+                case 39: { const auto n=r.read<int32_t>(); AttrIntArray a; a.reserve(n); for(int32_t j=0;j<n;++j) a.push_back(r.read<int32_t>()); val=std::move(a); break; }
+                case 40: { const auto n=r.read<int32_t>(); AttrIntArray a; a.reserve(n); for(int32_t j=0;j<n;++j) a.push_back(static_cast<int32_t>(r.read<uint32_t>())); val=std::move(a); break; }
+                case 41: { const auto n=r.read<int32_t>(); AttrVec2Array a; a.reserve(n); for(int32_t j=0;j<n;++j) a.push_back(r.read_vec2()); val=std::move(a); break; }
+                case 42: { const auto n=r.read<int32_t>(); AttrVec3Array a; a.reserve(n); for(int32_t j=0;j<n;++j) a.push_back(r.read_vec3()); val=std::move(a); break; }
+                case 43: { const auto n=r.read<int32_t>(); AttrVec3Array a; a.reserve(n); for(int32_t j=0;j<n;++j) a.push_back(r.read_vec3()); val=std::move(a); break; }
+                case 44: { const auto n=r.read<int32_t>(); AttrVec4Array a; a.reserve(n); for(int32_t j=0;j<n;++j) a.push_back(r.read_vec4()); val=std::move(a); break; }
+                case 45: { const auto n=r.read<int32_t>(); AttrQuatArray a; a.reserve(n); for(int32_t j=0;j<n;++j) a.push_back(r.read_quat()); val=std::move(a); break; }
+                case 46: { const auto n=r.read<int32_t>(); AttrMat4Array a; a.reserve(n); for(int32_t j=0;j<n;++j) a.push_back(r.read_mat4()); val=std::move(a); break; }
+                case 47: { const auto n=r.read<int32_t>(); val=r.read_bytes(static_cast<std::size_t>(n)); break; }
+                case 48: { const auto n=r.read<int32_t>(); AttrU64Array a; a.reserve(n); for(int32_t j=0;j<n;++j) a.push_back(r.read<uint64_t>()); val=std::move(a); break; }
 
                 default:
                     throw std::runtime_error("DMX: unknown attribute kind " + std::to_string(n_kind));

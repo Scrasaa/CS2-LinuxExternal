@@ -160,7 +160,7 @@ void CAimbot::Run()
 
     if (g_config.aimbot.bVisible)
     {
-        if (!g_map_manager.is_visible(
+        if (!g_MapManager.is_visible(
         { local_head_pos.x, local_head_pos.y, local_head_pos.z },
         { head_pos.x,       head_pos.y,       head_pos.z       }))
             return;

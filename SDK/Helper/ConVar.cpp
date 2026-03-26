@@ -12,7 +12,7 @@
 //  get_convar
 // ─────────────────────────────────────────────────────────────────────────────
 
-std::optional<uintptr_t> get_convar(
+std::optional<uintptr_t> GetConvar(
     uintptr_t        qw_convar_interface,
     std::string_view sz_name)
 {
@@ -47,7 +47,7 @@ std::optional<uintptr_t> get_convar(
 //  resolve_convar_offsets
 // ─────────────────────────────────────────────────────────────────────────────
 
-bool resolve_convar_offsets(Offsets& offsets, const std::string& sz_tier0_module)
+bool ResolveConvarOffsets(Offsets& offsets, const std::string& sz_tier0_module)
 {
     // ── VEngineCvar interface ─────────────────────────────────────────────────
     const uintptr_t qw_tier0_base = R().GetModuleBase(sz_tier0_module);
@@ -61,14 +61,14 @@ bool resolve_convar_offsets(Offsets& offsets, const std::string& sz_tier0_module
     offsets.iface.cvar = *qw_cvar;
 
     // ── mp_teammates_are_enemies  (FFA flag) ─────────────────────────────────
-    const auto qw_ffa = get_convar(offsets.iface.cvar, "mp_teammates_are_enemies");
+    const auto qw_ffa = GetConvar(offsets.iface.cvar, "mp_teammates_are_enemies");
     if (!qw_ffa)
         return false;   // mp_teammates_are_enemies convar not found
 
     offsets.convar.ffa = *qw_ffa;
 
     // ── sensitivity ──────────────────────────────────────────────────────────
-    const auto qw_sens = get_convar(offsets.iface.cvar, "sensitivity");
+    const auto qw_sens = GetConvar(offsets.iface.cvar, "sensitivity");
     if (!qw_sens)
         return false;   // sensitivity convar not found
 
@@ -81,12 +81,12 @@ bool resolve_convar_offsets(Offsets& offsets, const std::string& sz_tier0_module
 //  Value accessors
 // ─────────────────────────────────────────────────────────────────────────────
 
-float get_sensitivity(const Offsets& offsets)
+float GetSensitivity(const Offsets& offsets)
 {
     return R().ReadMem<float>(offsets.convar.sensitivity + convar_layout::k_value_offset);
 }
 
-bool is_ffa(const Offsets& offsets)
+bool IsFFA(const Offsets& offsets)
 {
     return R().ReadMem<uint8_t>(offsets.convar.ffa + convar_layout::k_value_offset) == 1u;
 }

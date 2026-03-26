@@ -53,34 +53,34 @@ void cfg::Load(const std::string& cfgName)
 
     // ----- Aimbot -----
     auto jAimbot = j.value("Aimbot", json::object());
-    g_config.aimbot.bEnable        = jAimbot.value("bEnable", g_config.aimbot.bEnable);
-    g_config.aimbot.bVisible        = jAimbot.value("bVisible", g_config.aimbot.bVisible);
-    g_config.aimbot.fRadius         = jAimbot.value("fRadius", g_config.aimbot.fRadius);
+    g_config.aimbot.bEnable             = jAimbot.value("bEnable", g_config.aimbot.bEnable);
+    g_config.aimbot.bVisible            = jAimbot.value("bVisible", g_config.aimbot.bVisible);
+    g_config.aimbot.fRadius             = jAimbot.value("fRadius", g_config.aimbot.fRadius);
     g_config.aimbot.fSmoothness         = jAimbot.value("fSmoothness", g_config.aimbot.fSmoothness);
-    g_config.aimbot.bAutoShoot      = jAimbot.value("bAutoShoot", g_config.aimbot.bAutoShoot);
+    g_config.aimbot.bAutoShoot          = jAimbot.value("bAutoShoot", g_config.aimbot.bAutoShoot);
 
     // ----- Aimbot -----
     auto jTriggerbot = j.value("Triggerbot", json::object());
-    g_config.triggerbot.bEnable        = jAimbot.value("bEnable", g_config.triggerbot.bEnable);
-    g_config.triggerbot.iMinReaction        = jAimbot.value("fMinReaction", g_config.triggerbot.iMinReaction);
-    g_config.triggerbot.iMaxReaction         = jAimbot.value("fMaxReaction", g_config.triggerbot.iMaxReaction);
+    g_config.triggerbot.bEnable             = jTriggerbot.value("bEnable", g_config.triggerbot.bEnable);
+    g_config.triggerbot.iMinReaction        = jTriggerbot.value("fMinReaction", g_config.triggerbot.iMinReaction);
+    g_config.triggerbot.iMaxReaction        = jTriggerbot.value("fMaxReaction", g_config.triggerbot.iMaxReaction);
 
     // ----- ESP: Players -----
     auto jPlayerESP = j.value("ESP_Players", json::object());
-    g_config.esp.player.bEnable   = jPlayerESP.value("bEnable", g_config.esp.player.bEnable);
-    g_config.esp.player.bDraw2DBox   = jPlayerESP.value("bDraw2DBox", g_config.esp.player.bDraw2DBox);
-    g_config.esp.player.bName   = jPlayerESP.value("bName", g_config.esp.player.bName);
-    g_config.esp.player.bTeam   = jPlayerESP.value("bTeam", g_config.esp.player.bTeam);
-    g_config.esp.player.bHealth   = jPlayerESP.value("bHealth", g_config.esp.player.bHealth);
-    g_config.esp.player.bSkeleton   = jPlayerESP.value("bSkeleton", g_config.esp.player.bSkeleton);
+    g_config.esp.player.bEnable         = jPlayerESP.value("bEnable", g_config.esp.player.bEnable);
+    g_config.esp.player.bDraw2DBox      = jPlayerESP.value("bDraw2DBox", g_config.esp.player.bDraw2DBox);
+    g_config.esp.player.bName           = jPlayerESP.value("bName", g_config.esp.player.bName);
+    g_config.esp.player.bTeam           = jPlayerESP.value("bTeam", g_config.esp.player.bTeam);
+    g_config.esp.player.bHealth         = jPlayerESP.value("bHealth", g_config.esp.player.bHealth);
+    g_config.esp.player.bSkeleton       = jPlayerESP.value("bSkeleton", g_config.esp.player.bSkeleton);
 
     g_config.esp.boxColorEnemy =  JsonToImColor(jPlayerESP.value("boxColorEnemy", ImColorToJson(g_config.esp.boxColorEnemy)));
     g_config.esp.boxColorTeam =  JsonToImColor(jPlayerESP.value("boxColorTeam", ImColorToJson(g_config.esp.boxColorTeam)));
 
     // ----- Visuals -----
     auto jVisuals = j.value("Visuals", json::object());
-    g_config.visuals.bDrawFovCircle       = jVisuals.value("bDrawFovCircle", g_config.visuals.bDrawFovCircle);
-    g_config.visuals.bDrawSnapLines          = jVisuals.value("bDrawSnapLines", g_config.visuals.bDrawSnapLines);
+    g_config.visuals.bDrawFovCircle             = jVisuals.value("bDrawFovCircle", g_config.visuals.bDrawFovCircle);
+    g_config.visuals.bDrawSnapLines             = jVisuals.value("bDrawSnapLines", g_config.visuals.bDrawSnapLines);
 }
 
 void cfg::Save(const std::string& cfgName)
