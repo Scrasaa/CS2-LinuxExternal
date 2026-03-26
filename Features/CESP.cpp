@@ -7,6 +7,7 @@
 #include <array>
 #include <cmath>
 #include <cstdint>
+#include <set>
 #include <utility>
 
 #include "globals.h"
@@ -177,8 +178,12 @@ void CESP::Run()
         if (g_config.esp.player.bDraw2DBox)
             Draw2DBox(p_draw_list, bone_map, R().ReadString(contoller + SCHEMA_OFFSET(CBasePlayerController, m_iszPlayerName)) );
     }
+
+    // For simplicity, I just do the other ImGui stuff here.
     if (g_config.visuals.bDrawFovCircle)
         DrawFOVIndicator(p_draw_list, local_pawn);
+
+    DrawSpectatorList(p_draw_list, local_pawn);
 }
 
 void CESP::DrawSkeleton(
@@ -280,4 +285,43 @@ void CESP::DrawFOVIndicator(ImDrawList *p_draw_list, uintptr_t local_pawn)
         64,
         1.5f
     );
+}
+
+void CESP::DrawSpectatorList(ImDrawList *p_draw_list, uintptr_t local_pawn)
+{
+    auto y = 0.f;
+    p_draw_list->AddText(ImVec2(20, 450.f - 15),IM_COL32(255, 255,255,255),"Spectator List:");
+    std::set<std::string> spectatorSet;
+
+    for (const auto& pawn : g_EntityCache.get_pawns())
+    {
+        if (!is_valid_ptr(pawn) || pawn == local_pawn)
+            continue;
+
+        auto observer_service = R().ReadMem<uintptr_t>(pawn + SCHEMA_OFFSET(C_BasePlayerPawn, m_pObserverServices));
+        if (!is_valid_ptr(observer_service))
+            continue;
+
+        auto observer_target = R().ReadMem<uintptr_t>(observer_service + SCHEMA_OFFSET(CPlayer_ObserverServices, m_hObserverTarget));
+        auto target_pawn = g_EntityCache.resolve_entity_from_handle(observer_target);
+        if (!is_valid_ptr(target_pawn))
+            continue;
+
+        auto target_controller = g_EntityCache.resolve_entity_from_handle(
+            R().ReadMem<uintptr_t>(target_pawn + SCHEMA_OFFSET(C_BasePlayerPawn, m_hController))
+        );
+        if (!is_valid_ptr(target_controller))
+            continue;
+
+        auto name = R().ReadString(target_controller + SCHEMA_OFFSET(CBasePlayerController, m_iszPlayerName));
+        if (!name.empty())
+            spectatorSet.insert(name);
+    }
+
+    // Draw
+    for (const auto& playerName : spectatorSet)
+    {
+        p_draw_list->AddText(ImVec2(20, 450.f + y), IM_COL32(255, 0, 0, 255), playerName.c_str());
+        y += 15.f;
+    }
 }
