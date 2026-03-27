@@ -124,7 +124,7 @@ void CESP::Run()
 
     auto local_team = R().ReadMem<int32_t>(local_pawn + SCHEMA_OFFSET(C_BaseEntity, m_iTeamNum));
 
-    for (const auto& [contoller, pawn] : g_EntityCache.get_entity_pairs())
+    for (const auto& [controlller, pawn] : g_EntityCache.get_entity_pairs())
     {
         if (!is_valid_ptr(pawn))
             continue;
@@ -146,9 +146,7 @@ void CESP::Run()
         if (!is_valid_ptr(game_scene_node))
             continue;
 
-        auto pawn_dormant =  R().ReadMem<bool>(game_scene_node + SCHEMA_OFFSET(CGameSceneNode, m_bDormant));
-
-        if (pawn_dormant)
+        if (auto pawn_dormant =  R().ReadMem<bool>(game_scene_node + SCHEMA_OFFSET(CGameSceneNode, m_bDormant)))
             continue;
 
         const auto bone_map = all_bones(game_scene_node);
@@ -173,10 +171,11 @@ void CESP::Run()
         }
 
         if (g_config.esp.player.bSkeleton)
-            DrawSkeleton(p_draw_list, game_scene_node);
+            DrawSkeleton(p_draw_list, bone_map);
 
+        // HP, MaxHP, Armor, helmet, defuse, bomb ? maybe make a structure lol
         if (g_config.esp.player.bDraw2DBox)
-            Draw2DBox(p_draw_list, bone_map, R().ReadString(contoller + SCHEMA_OFFSET(CBasePlayerController, m_iszPlayerName)) );
+            Draw2DBox(p_draw_list, bone_map, R().ReadString(controlller + SCHEMA_OFFSET(CBasePlayerController, m_iszPlayerName)) );
     }
 
     // For simplicity, I just do the other ImGui stuff here.
@@ -188,12 +187,10 @@ void CESP::Run()
 
 void CESP::DrawSkeleton(
     ImDrawList*  p_draw_list,
-    uintptr_t    game_scene_node,
+    const std::unordered_map<Bones, Utils::Math::Vector>& bone_map,
     ImU32        color,
     float        thickness)
 {
-    const auto bone_map = all_bones(game_scene_node);
-
     if (bone_map.empty())
         return;
 
@@ -307,6 +304,9 @@ void CESP::DrawSpectatorList(ImDrawList *p_draw_list, uintptr_t local_pawn)
         if (!is_valid_ptr(target_pawn))
             continue;
 
+        if (target_pawn != local_pawn)
+            continue;
+
         auto target_controller = g_EntityCache.resolve_entity_from_handle(
             R().ReadMem<uintptr_t>(target_pawn + SCHEMA_OFFSET(C_BasePlayerPawn, m_hController))
         );
@@ -314,11 +314,16 @@ void CESP::DrawSpectatorList(ImDrawList *p_draw_list, uintptr_t local_pawn)
             continue;
 
         auto name = R().ReadString(target_controller + SCHEMA_OFFSET(CBasePlayerController, m_iszPlayerName));
-        if (!name.empty())
-            spectatorSet.insert(name);
+
+        if (name.empty())
+            continue;
+
+        int observerMode = R().ReadMem<int>(observer_service + SCHEMA_OFFSET(CPlayer_ObserverServices, m_iObserverMode));
+        std::string modeStr = (observerMode == 2) ? "first-person" : "third-person";
+
+        spectatorSet.insert(name + " (" + modeStr + ")");
     }
 
-    // Draw
     for (const auto& playerName : spectatorSet)
     {
         p_draw_list->AddText(ImVec2(20, 450.f + y), IM_COL32(255, 0, 0, 255), playerName.c_str());
