@@ -10,6 +10,8 @@
 #include "imgui.h"
 #include "Utils/Utils.h"
 
+struct PlayerInfo;
+
 enum class Bones : std::uint64_t
 {
     Hip = 0,
@@ -45,12 +47,13 @@ public:
     void Run();
     static void DrawSkeleton(ImDrawList* p_draw_list, const std::unordered_map<Bones, Utils::Math::Vector>& bone_map,
                   ImU32 color = IM_COL32(255, 0, 0, 255), float thickness = 1.5f);
-    static void Draw2DBox(ImDrawList* p_draw_list,
-               const std::unordered_map<Bones, Utils::Math::Vector>& bone_map,
-               const std::string& name,
-               ImU32 box_color  = IM_COL32(255, 255, 255, 255),
-               ImU32 text_color = IM_COL32(255, 255, 255, 255),
-               float thickness  = 1.5f);
+
+    static void Draw2DBox(ImDrawList *p_draw_list,
+                          const std::unordered_map<Bones, Utils::Math::Vector> &bone_map,
+                          const PlayerInfo &player_info,
+                          ImU32 box_color = IM_COL32(255, 255, 255, 255),
+                          ImU32 text_color = IM_COL32(255, 255, 255, 255),
+                          float thickness = 1.5f);
 
     // Visual Stuff
     static void DrawFOVIndicator(ImDrawList* p_draw_list, uintptr_t local_pawn);

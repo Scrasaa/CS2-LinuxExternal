@@ -60,6 +60,46 @@ struct Bone
     std::byte padding[20];        // rest of 32-byte struct
 };
 
+enum EPlayerFlags : uint8_t
+{
+    FLAG_DEFUSING    = 1 << 0,
+    FLAG_PLANTING    = 1 << 1,
+    FLAG_SCOPED      = 1 << 2,
+    FLAG_FLASHED     = 1 << 3,
+    FLAG_HAS_C4      = 1 << 4,
+    FLAG_HAS_DEFUSER = 1 << 5,
+    FLAG_HAS_HELMET  = 1 << 6
+};
+
+struct PlayerInfo
+{
+    std::string szName{};
+    int iHealth{};
+    int iMaxHealth{};
+    int iArmor{};
+    uint8_t flags{};
+    int iMoney{};
+    std::string szWeaponName{};
+    int iMagCount{};
+    int iAmmoCount{};
+    int iMaxAmmoCount{};
+
+    [[nodiscard]] inline bool HasFlag(const uint8_t f) const
+    {
+        return (flags & f) != 0;
+    }
+
+    inline void SetFlag(const uint8_t f)
+    {
+        flags |= f;
+    }
+
+    inline void ClearFlag(const uint8_t f)
+    {
+        flags &= ~f;
+    }
+};
+
 Utils::Math::Vector bone_position(const uintptr_t game_scene_node, const uint64_t bone_index)
 {
     const auto bone_data = R().ReadMem<uintptr_t>(
@@ -81,7 +121,6 @@ std::unordered_map<Bones, Utils::Math::Vector> all_bones(const uintptr_t game_sc
 {
     std::unordered_map<Bones, Utils::Math::Vector> bones;
 
-    // Single read — flat offset sum, exactly like the Rust
     const auto bone_data = R().ReadMem<uintptr_t>(
         game_scene_node
         + SCHEMA_OFFSET(CSkeletonInstance, m_modelState)
@@ -174,8 +213,34 @@ void CESP::Run()
             DrawSkeleton(p_draw_list, bone_map);
 
         // HP, MaxHP, Armor, helmet, defuse, bomb ? maybe make a structure lol
+        PlayerInfo player_info{};
+        player_info.szName = R().ReadString(controlller + SCHEMA_OFFSET(CBasePlayerController, m_iszPlayerName));
+        player_info.iHealth = R().ReadMem<int32_t>(pawn + SCHEMA_OFFSET(C_BaseEntity, m_iHealth));
+        player_info.iMaxHealth = R().ReadMem<int32_t>(pawn + SCHEMA_OFFSET(C_BaseEntity, m_iMaxHealth));
+        player_info.iArmor = R().ReadMem<int32_t>(pawn + SCHEMA_OFFSET(C_CSPlayerPawn, m_ArmorValue));
+
+        // Flags
+        player_info.flags = 0;
+
+        if (R().ReadMem<int8_t>(pawn + SCHEMA_OFFSET(C_CSPlayerPawn, m_bIsScoped)))
+            player_info.SetFlag(FLAG_SCOPED);
+
+        if (R().ReadMem<int8_t>(pawn + SCHEMA_OFFSET(C_CSPlayerPawn, m_bIsDefusing)))
+            player_info.SetFlag(FLAG_DEFUSING);
+
+        auto player_item_services = R().ReadMem<uintptr_t>(pawn + SCHEMA_OFFSET(C_BasePlayerPawn, m_pItemServices));
+
+        if (is_valid_ptr(player_item_services))
+        {
+            if (R().ReadMem<int8_t>(player_item_services + SCHEMA_OFFSET(CCSPlayer_ItemServices, m_bHasDefuser)))
+                player_info.SetFlag(FLAG_HAS_DEFUSER);
+
+            if (R().ReadMem<int8_t>(player_item_services + SCHEMA_OFFSET(CCSPlayer_ItemServices, m_bHasHelmet)))
+                player_info.SetFlag(FLAG_HAS_HELMET);
+        }
+
         if (g_config.esp.player.bDraw2DBox)
-            Draw2DBox(p_draw_list, bone_map, R().ReadString(controlller + SCHEMA_OFFSET(CBasePlayerController, m_iszPlayerName)) );
+            Draw2DBox(p_draw_list, bone_map,  player_info);
     }
 
     // For simplicity, I just do the other ImGui stuff here.
@@ -212,18 +277,19 @@ void CESP::DrawSkeleton(
     }
 }
 
+// Rewrite this, calculate min max, in above and pass it to diff funcs
 void CESP::Draw2DBox(
     ImDrawList*                                        p_draw_list,
     const std::unordered_map<Bones, Utils::Math::Vector>& bone_map,
-    const std::string&                                 name,
+    const PlayerInfo&                                  player_info,
     ImU32                                              box_color,
     ImU32                                              text_color,
     float                                              thickness)
 {
-    float min_x = FLT_MAX, min_y = FLT_MAX;
-    float max_x = FLT_MIN, max_y = FLT_MIN;
+    float f_min_x = FLT_MAX,  f_min_y = FLT_MAX;
+    float f_max_x = -FLT_MAX, f_max_y = -FLT_MAX; // FLT_MIN != -FLT_MAX
 
-    bool any_valid = false;
+    bool b_any_valid = false;
 
     for (const Bones bone : k_needed_bones)
     {
@@ -235,40 +301,92 @@ void CESP::Draw2DBox(
         if (!screen.has_value())
             continue;
 
-        const ImVec2 pos = screen.value();
-        min_x = std::min(min_x, pos.x);
-        min_y = std::min(min_y, pos.y);
-        max_x = std::max(max_x, pos.x);
-        max_y = std::max(max_y, pos.y);
+        const ImVec2 v_pos = screen.value();
+        f_min_x = std::min(f_min_x, v_pos.x);
+        f_min_y = std::min(f_min_y, v_pos.y);
+        f_max_x = std::max(f_max_x, v_pos.x);
+        f_max_y = std::max(f_max_y, v_pos.y);
 
-        any_valid = true;
+        b_any_valid = true;
     }
 
-    if (!any_valid)
+    if (!b_any_valid)
         return;
 
     constexpr float k_padding = 6.f;
-    min_x -= k_padding;
-    min_y -= k_padding;
-    max_x += k_padding;
-    max_y += k_padding;
+    f_min_x -= k_padding;
+    f_min_y -= k_padding;
+    f_max_x += k_padding;
+    f_max_y += k_padding;
 
     p_draw_list->AddRect(
-        ImVec2(min_x, min_y),
-        ImVec2(max_x, max_y),
+        ImVec2(f_min_x, f_min_y),
+        ImVec2(f_max_x, f_max_y),
         box_color,
         0.f,
         ImDrawFlags_None,
         thickness);
 
-    // Name label centered above the box
-    const ImVec2 text_size   = ImGui::CalcTextSize(name.c_str());
-    const float  text_x      = min_x + ((max_x - min_x) - text_size.x) * 0.5f;
-    const float  text_y      = min_y - text_size.y - 3.f;
+    // --- Name label centered above the box ---
+    const ImVec2 v_text_size = ImGui::CalcTextSize(player_info.szName.c_str());
+    const float  f_text_x    = f_min_x + ((f_max_x - f_min_x) - v_text_size.x) * 0.5f;
+    const float  f_text_y    = f_min_y - v_text_size.y - 3.f;
 
-    // Drop shadow for readability
-    p_draw_list->AddText(ImVec2(text_x + 1.f, text_y + 1.f), IM_COL32(0, 0, 0, 200), name.c_str());
-    p_draw_list->AddText(ImVec2(text_x,        text_y),       text_color,              name.c_str());
+    p_draw_list->AddText(ImVec2(f_text_x + 1.f, f_text_y + 1.f), IM_COL32(0, 0, 0, 200), player_info.szName.c_str());
+    p_draw_list->AddText(ImVec2(f_text_x,        f_text_y),       text_color,              player_info.szName.c_str());
+
+    // --- Health bar ---
+    const float f_health_frac = std::clamp(
+        static_cast<float>(player_info.iHealth) / static_cast<float>(player_info.iMaxHealth),
+        0.f, 1.f);
+
+    constexpr float k_bar_width = 4.f;
+    constexpr float k_bar_gap   = 8.f;
+
+    const float f_bar_x = f_min_x - k_bar_gap;
+    const float f_bar_y = f_min_y;
+    const float f_bar_h = f_max_y - f_min_y;
+
+    // Background
+    p_draw_list->AddRectFilled(
+        ImVec2(f_bar_x,               f_bar_y),
+        ImVec2(f_bar_x + k_bar_width, f_bar_y + f_bar_h),
+        IM_COL32(0, 0, 0, 200));
+
+    // Green → red based on fraction
+    const ImU32 u_health_color = IM_COL32(
+        static_cast<int>((1.f - f_health_frac) * 255.f),
+        static_cast<int>(f_health_frac         * 255.f),
+        0,
+        255);
+
+    // Filled portion bottom-up
+    const float f_filled_h  = f_bar_h * f_health_frac;
+    const float f_filled_y0 = f_bar_y + (f_bar_h - f_filled_h);
+
+    p_draw_list->AddRectFilled(
+        ImVec2(f_bar_x,               f_filled_y0),
+        ImVec2(f_bar_x + k_bar_width, f_bar_y + f_bar_h),
+        u_health_color);
+
+    // --- Health text ---
+    char sz_health_text[8];
+    snprintf(sz_health_text, sizeof(sz_health_text), "%d", player_info.iHealth);
+
+    const ImVec2 v_hp_text_size = ImGui::CalcTextSize(sz_health_text);
+
+    const float f_hp_text_x = f_bar_x - v_hp_text_size.x - 4.f; //+ (k_bar_width * 0.5f) - (v_hp_text_size.x * 0.5f);
+    const float f_hp_text_y = f_filled_y0 - (v_hp_text_size.y / 2);
+
+    p_draw_list->AddText(
+        ImVec2(f_hp_text_x + 1.f, f_hp_text_y + 1.f),
+        IM_COL32(0, 0, 0, 200),
+        sz_health_text);
+
+    p_draw_list->AddText(
+        ImVec2(f_hp_text_x, f_hp_text_y),
+        IM_COL32(255, 255, 255, 255),
+        sz_health_text);
 }
 
 void CESP::DrawFOVIndicator(ImDrawList *p_draw_list, uintptr_t local_pawn)
