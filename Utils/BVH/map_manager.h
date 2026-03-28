@@ -23,14 +23,17 @@ public:
 
     // Returns true if the line between the two positions is unobstructed.
     // Returns true (assume visible) when no geometry is loaded.
-    bool is_visible(const glm::vec3& v3_start, const glm::vec3& v3_end) const;
+    [[nodiscard]] bool is_visible(const glm::vec3& v3_start, const glm::vec3& v3_end) const;
 
-    const std::string& current_map() const { return m_sz_current_map; }
-    bool               is_loaded()   const { return m_b_loaded; }
+    [[nodiscard]] const std::string& current_map() const { return m_sz_current_map; }
+    [[nodiscard]] bool               is_loaded()   const { return m_b_loaded; }
 
 private:
-    std::string read_map_name() const;
+    [[nodiscard]] std::string read_map_name() const;
     bool        load_geo(const std::filesystem::path& path_geo);
+
+    [[nodiscard]] bool save_bvh_cache(const std::filesystem::path& path_cache) const;
+    bool load_bvh_cache(const std::filesystem::path& path_cache);
 
     static std::filesystem::path find_geo_path(const std::string& sz_map_name);
     static std::filesystem::path find_vpk_path(const std::string& sz_map_name);

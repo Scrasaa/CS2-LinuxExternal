@@ -79,7 +79,7 @@ struct PlayerInfo
     int iArmor{};
     uint8_t flags{};
     int iMoney{};
-    std::string szWeaponName{};
+    std::string szWeaponName{}; // might need another struct ;(((
     int iMagCount{};
     int iAmmoCount{};
     int iMaxAmmoCount{};
@@ -212,7 +212,6 @@ void CESP::Run()
         if (g_config.esp.player.bSkeleton)
             DrawSkeleton(p_draw_list, bone_map);
 
-        // HP, MaxHP, Armor, helmet, defuse, bomb ? maybe make a structure lol
         PlayerInfo player_info{};
         player_info.szName = R().ReadString(controlller + SCHEMA_OFFSET(CBasePlayerController, m_iszPlayerName));
         player_info.iHealth = R().ReadMem<int32_t>(pawn + SCHEMA_OFFSET(C_BaseEntity, m_iHealth));
@@ -402,11 +401,12 @@ void CESP::DrawFOVIndicator(ImDrawList *p_draw_list, uintptr_t local_pawn)
     );
 }
 
-void CESP::DrawSpectatorList(ImDrawList *p_draw_list, uintptr_t local_pawn)
+void CESP::DrawSpectatorList(ImDrawList* p_draw_list, uintptr_t local_pawn)
 {
     auto y = 0.f;
-    p_draw_list->AddText(ImVec2(20, 450.f - 15),IM_COL32(255, 255,255,255),"Spectator List:");
-    std::set<std::string> spectatorSet;
+    p_draw_list->AddText(ImVec2(20, 450.f - 15), IM_COL32(255, 255, 255, 255), "Spectator List:");
+
+    std::set<std::string> spectator_set;
 
     for (const auto& pawn : g_EntityCache.get_pawns())
     {
@@ -419,32 +419,29 @@ void CESP::DrawSpectatorList(ImDrawList *p_draw_list, uintptr_t local_pawn)
 
         auto observer_target = R().ReadMem<uintptr_t>(observer_service + SCHEMA_OFFSET(CPlayer_ObserverServices, m_hObserverTarget));
         auto target_pawn = g_EntityCache.resolve_entity_from_handle(observer_target);
-        if (!is_valid_ptr(target_pawn))
+        if (!is_valid_ptr(target_pawn) || target_pawn != local_pawn)
             continue;
 
-        if (target_pawn != local_pawn)
-            continue;
-
-        auto target_controller = g_EntityCache.resolve_entity_from_handle(
-            R().ReadMem<uintptr_t>(target_pawn + SCHEMA_OFFSET(C_BasePlayerPawn, m_hController))
+        // Resolve the SPECTATOR'S controller (pawn, not target_pawn)
+        auto spectator_controller = g_EntityCache.resolve_entity_from_handle(
+            R().ReadMem<uintptr_t>(pawn + SCHEMA_OFFSET(C_BasePlayerPawn, m_hController))
         );
-        if (!is_valid_ptr(target_controller))
+        if (!is_valid_ptr(spectator_controller))
             continue;
 
-        auto name = R().ReadString(target_controller + SCHEMA_OFFSET(CBasePlayerController, m_iszPlayerName));
-
+        auto name = R().ReadString(spectator_controller + SCHEMA_OFFSET(CBasePlayerController, m_iszPlayerName));
         if (name.empty())
             continue;
 
-        int observerMode = R().ReadMem<int>(observer_service + SCHEMA_OFFSET(CPlayer_ObserverServices, m_iObserverMode));
-        std::string modeStr = (observerMode == 2) ? "first-person" : "third-person";
+        int observer_mode = R().ReadMem<int>(observer_service + SCHEMA_OFFSET(CPlayer_ObserverServices, m_iObserverMode));
+        std::string mode_str = (observer_mode == 2) ? "first-person" : "third-person";
 
-        spectatorSet.insert(name + " (" + modeStr + ")");
+        spectator_set.insert(name + " (" + mode_str + ")");
     }
 
-    for (const auto& playerName : spectatorSet)
+    for (const auto& entry : spectator_set)
     {
-        p_draw_list->AddText(ImVec2(20, 450.f + y), IM_COL32(255, 0, 0, 255), playerName.c_str());
+        p_draw_list->AddText(ImVec2(20, 450.f + y), IM_COL32(255, 0, 0, 255), entry.c_str());
         y += 15.f;
     }
 }

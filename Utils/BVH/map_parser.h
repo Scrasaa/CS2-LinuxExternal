@@ -53,10 +53,10 @@ inline bool write_geo(const Bvh& bvh, const fs::path& path_out)
         f.write(reinterpret_cast<const char*>(&val), sizeof(val));
     };
 
-    const uint64_t n_count = static_cast<uint64_t>(bvh.triangles().size());
+    const auto n_count = static_cast<uint64_t>(bvh.tris().size());
     fn_write(n_count);
 
-    for (const Triangle& tri : bvh.triangles())
+    for (const Triangle& tri : bvh.tris())
     {
         fn_write(tri.m_v3V0.x); fn_write(tri.m_v3V0.y); fn_write(tri.m_v3V0.z);
         fn_write(tri.m_v3V1.x); fn_write(tri.m_v3V1.y); fn_write(tri.m_v3V1.z);
@@ -274,7 +274,7 @@ inline bool parse_map_to_geo(
         parse_dmx_file(entry.path(), e_type, bvh);
     }
 
-    bvh.build();
+    bvh.rebuild();
 
     const bool b_ok = write_geo(bvh, path_geo_out);
 
