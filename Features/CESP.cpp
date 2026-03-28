@@ -401,10 +401,21 @@ void CESP::DrawFOVIndicator(ImDrawList *p_draw_list, uintptr_t local_pawn)
     );
 }
 
+constexpr ImU32 outline_color = IM_COL32(0, 0, 0, 255);
+constexpr float offset = 1.0f;
+const char* header_text = "Spectator List:";
+constexpr ImVec2 header_pos(20, 450.f - 15);
+
 void CESP::DrawSpectatorList(ImDrawList* p_draw_list, uintptr_t local_pawn)
 {
     auto y = 0.f;
-    p_draw_list->AddText(ImVec2(20, 450.f - 15), IM_COL32(255, 255, 255, 255), "Spectator List:");
+
+    p_draw_list->AddText(ImVec2(header_pos.x - offset, header_pos.y - offset), outline_color, header_text);
+    p_draw_list->AddText(ImVec2(header_pos.x + offset, header_pos.y - offset), outline_color, header_text);
+    p_draw_list->AddText(ImVec2(header_pos.x - offset, header_pos.y + offset), outline_color, header_text);
+    p_draw_list->AddText(ImVec2(header_pos.x + offset, header_pos.y + offset), outline_color, header_text);
+
+    p_draw_list->AddText(header_pos, IM_COL32(255, 255, 255, 255), header_text);
 
     std::set<std::string> spectator_set;
 
@@ -441,7 +452,16 @@ void CESP::DrawSpectatorList(ImDrawList* p_draw_list, uintptr_t local_pawn)
 
     for (const auto& entry : spectator_set)
     {
-        p_draw_list->AddText(ImVec2(20, 450.f + y), IM_COL32(255, 0, 0, 255), entry.c_str());
+        ImVec2 pos(20, 450.f + y);
+        const char* text = entry.c_str();
+
+        p_draw_list->AddText(ImVec2(pos.x - offset, pos.y - offset), outline_color, text);
+        p_draw_list->AddText(ImVec2(pos.x + offset, pos.y - offset), outline_color, text);
+        p_draw_list->AddText(ImVec2(pos.x - offset, pos.y + offset), outline_color, text);
+        p_draw_list->AddText(ImVec2(pos.x + offset, pos.y + offset), outline_color, text);
+
+        // Draw main text on top
+        p_draw_list->AddText(pos, IM_COL32(255, 0, 0, 255), text);
         y += 15.f;
     }
 }
