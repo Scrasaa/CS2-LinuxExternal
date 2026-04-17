@@ -1,4 +1,5 @@
 #pragma once
+#include "imgui.h"
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Overlay
@@ -19,6 +20,8 @@ namespace Overlay
     // Detects primary monitor geometry, then calls Init → Run → Shutdown.
     // Blocks until the render loop exits. Returns false if Init failed.
     bool Start();
+
+    inline ImFont* small_font{nullptr};
 
     // Explicit geometry variant — use when you already know the target
     // window / monitor rect.

@@ -17,6 +17,7 @@
 
 #include "../Thirdparty/ImGUI/imgui.h"
 #include "Utils/Config.h"
+#include "Utils/Overlay.h"
 #include "Utils/BVH/map_manager.h"
 
 #define DEG2RAD(x) ((x) * (3.14159265358979323846 / 180.0))
@@ -295,7 +296,7 @@ void CESP::Draw2DBox(
         static_cast<float>(player_info.iHealth) / static_cast<float>(player_info.iMaxHealth),
         0.f, 1.f);
 
-    constexpr float k_bar_width = 4.f;
+    constexpr float k_bar_width = 4.f; // Make this dynamic? based on box size
     constexpr float k_bar_gap   = 8.f;
     const float f_bar_x = f_min_x - k_bar_gap;
     const float f_bar_y = f_min_y;
@@ -329,17 +330,16 @@ void CESP::Draw2DBox(
     p_draw_list->AddText(ImVec2(f_hp_text_x,        f_hp_text_y),       IM_COL32(255, 255, 255, 255),   sz_health_text);
 
     // --- Status flags (below box) ---
-    constexpr float k_flag_gap   = 4.f;
+    constexpr float k_flag_gap   = 2.f;
     constexpr float k_flag_pad_y = 3.f;
 
     const float       f_flag_x =  f_max_x + 8.f; // + text size
     float f_flag_y =  f_min_y + k_flag_pad_y;
 
-    const auto draw_flag = [&](const char* sz_label, ImU32 u_color)
+    const auto draw_flag = [&](const char* sz_label, const ImU32 u_color)
     {
-
-        static const ImU32 shadow_col = IM_COL32(0, 0, 0, 255);
-
+        static constexpr ImU32 shadow_col = IM_COL32(0, 0, 0, 255);
+        ImGui::PushFont(Overlay::small_font);
         p_draw_list->AddText(ImVec2(f_flag_x - 1.f, f_flag_y),      shadow_col, sz_label); // left
         p_draw_list->AddText(ImVec2(f_flag_x + 1.f, f_flag_y),      shadow_col, sz_label); // right
         p_draw_list->AddText(ImVec2(f_flag_x,       f_flag_y - 1.f), shadow_col, sz_label); // up
@@ -350,9 +350,11 @@ void CESP::Draw2DBox(
             ImVec2(f_flag_x, f_flag_y),
                      u_color,
             sz_label);
-
+        ImGui::PopFont();
         f_flag_y += v_text_size.y + k_flag_gap;
     };
+
+
 
     const unsigned int show = g_config.esp.player.uShowFlags;
 

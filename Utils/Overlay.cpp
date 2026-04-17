@@ -397,6 +397,18 @@ static bool init(int x, int y, int w, int h)
     io.DisplaySize = ImVec2(static_cast<float>(g_ow.width),
                             static_cast<float>(g_ow.height));
 
+    const auto def_font = ImGui::GetIO().Fonts->AddFontFromFileTTF(
+    "/usr/share/fonts/TTF/DejaVuSans.ttf",
+    14.0f
+    );
+
+    io.FontDefault = def_font;
+
+    small_font = ImGui::GetIO().Fonts->AddFontFromFileTTF(
+    "/usr/share/fonts/TTF/DejaVuSans.ttf",
+    12.0f
+    );
+
     ImGui::StyleColorsDark();
 
     ImGui_ImplX11_Init(g_ow.display, g_ow.window);
