@@ -13,6 +13,49 @@ constexpr auto defaultCfgPath  = "/home/scrasa/.config/cs2-external/";
 
 //------------------------ Helper Functions
 
+// Store flags as named bools — human-readable in the config file,
+// not a raw integer that nobody can read without a reference
+inline void to_json(nlohmann::json& j, const PlayerInfo& p)
+{
+    j =
+    {
+        { "name",           p.szName        },
+        { "health",         p.iHealth       },
+        { "max_health",     p.iMaxHealth    },
+        { "armor",          p.iArmor        },
+        { "money",          p.iMoney        },
+        { "weapon",         p.szWeaponName  },
+        { "mag_count",      p.iMagCount     },
+        { "ammo_count",     p.iAmmoCount    },
+        { "max_ammo_count", p.iMaxAmmoCount },
+    };
+
+    auto& flags_node = j["flags"];
+    for (const auto& meta : k_flag_meta)
+        flags_node[meta.json_key.data()] = p.HasFlag(meta.flag);
+}
+
+inline void from_json(const nlohmann::json& j, PlayerInfo& p)
+{
+    j.at("name")           .get_to(p.szName);
+    j.at("health")         .get_to(p.iHealth);
+    j.at("max_health")     .get_to(p.iMaxHealth);
+    j.at("armor")          .get_to(p.iArmor);
+    j.at("money")          .get_to(p.iMoney);
+    j.at("weapon")         .get_to(p.szWeaponName);
+    j.at("mag_count")      .get_to(p.iMagCount);
+    j.at("ammo_count")     .get_to(p.iAmmoCount);
+    j.at("max_ammo_count") .get_to(p.iMaxAmmoCount);
+
+    p.flags = 0;
+    const auto& flags_node = j.at("flags");
+    for (const auto& meta : k_flag_meta)
+    {
+        if (flags_node.value(meta.json_key.data(), false))
+            p.SetFlag(meta.flag);
+    }
+}
+
 std::vector<std::string> cfg::GetConfigFiles()
 {
     std::vector<std::string> files;
@@ -38,9 +81,20 @@ inline ImColor JsonToImColor(const json& j, const ImColor& defaultColor = ImColo
     if (!j.is_array() || j.size() != 4)
         return defaultColor;
 
-    return {j[0].get<float>(), j[1].get<float>(), j[2].get<float>(), j[3].get<float>()};
+    try
+    {
+        return {
+            j[0].get<float>(),
+            j[1].get<float>(),
+            j[2].get<float>(),
+            j[3].get<float>()
+        };
+    }
+    catch (...)
+    {
+        return defaultColor;
+    }
 }
-
 //------------------------ Cfg Functions
 
 void cfg::Load(const std::string& cfgName)
@@ -74,8 +128,16 @@ void cfg::Load(const std::string& cfgName)
     g_config.esp.player.bHealth         = jPlayerESP.value("bHealth", g_config.esp.player.bHealth);
     g_config.esp.player.bSkeleton       = jPlayerESP.value("bSkeleton", g_config.esp.player.bSkeleton);
 
-    g_config.esp.boxColorEnemy =  JsonToImColor(jPlayerESP.value("boxColorEnemy", ImColorToJson(g_config.esp.boxColorEnemy)));
-    g_config.esp.boxColorTeam =  JsonToImColor(jPlayerESP.value("boxColorTeam", ImColorToJson(g_config.esp.boxColorTeam)));
+    g_config.esp.boxColorEnemy  =  JsonToImColor(jPlayerESP.value("boxColorEnemy", ImColorToJson(g_config.esp.boxColorEnemy)));
+    g_config.esp.skeletonColor  =  JsonToImColor(jPlayerESP.value("skeletonColor", ImColorToJson(g_config.esp.skeletonColor)));
+
+    g_config.esp.player.uShowFlags = 0;
+    const auto& jShowFlags = jPlayerESP.value("show_flags", json::object());
+    for (const auto& meta : k_flag_meta)
+    {
+        if (jShowFlags.value(meta.json_key.data(), false))
+            g_config.esp.player.uShowFlags |= static_cast<uint8_t>(meta.flag);
+    }
 
     // ----- Visuals -----
     auto jVisuals = j.value("Visuals", json::object());
@@ -117,8 +179,28 @@ void cfg::Save(const std::string& cfgName)
         {"bHealth", g_config.esp.player.bHealth},
         {"bDraw2DBox", g_config.esp.player.bDraw2DBox},
         {"bVisible", g_config.esp.player.bVisible},
-        {"bTeam", g_config.esp.player.bTeam}
+        {"bTeam", g_config.esp.player.bTeam},
+        {"boxColorEnemy",
+           {
+               g_config.esp.boxColorEnemy.Value.x,
+               g_config.esp.boxColorEnemy.Value.y,
+               g_config.esp.boxColorEnemy.Value.z,
+               g_config.esp.boxColorEnemy.Value.w
+           }
+        },
+        {"skeletonColor",
+            {
+                g_config.esp.skeletonColor.Value.x,
+                g_config.esp.skeletonColor.Value.y,
+                g_config.esp.skeletonColor.Value.z,
+                g_config.esp.skeletonColor.Value.w
+            }
+        }
     };
+
+    auto& jShowFlags = j["ESP_Players"]["show_flags"];
+    for (const auto& meta : k_flag_meta)
+        jShowFlags[meta.json_key.data()] = (g_config.esp.player.uShowFlags & meta.flag) != 0;
 
     // ----- Visuals -----
     j["Visuals"] =

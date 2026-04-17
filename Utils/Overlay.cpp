@@ -539,6 +539,12 @@ void DrawMenu()
                         CheckboxCompact("Only Visible", &g_config.esp.player.bVisible);
                         CheckboxCompact("Draw Weapon", &g_config.esp.player.bWeapon);
                         CheckboxCompact("Draw Skeleton", &g_config.esp.player.bSkeleton);
+
+                        ImGui::SeparatorText("Flag Indicators");
+
+                        auto& show = g_config.esp.player.uShowFlags;
+                        for (const auto& meta : k_flag_meta)
+                            ImGui::CheckboxFlags(meta.label.data(), &show, static_cast<unsigned int>(meta.flag));
                         break;
                     }
                     case 1:
@@ -589,6 +595,14 @@ void DrawMenu()
 
             ImGui::BeginChild("VisualsRight", ImVec2(0, 0), true);
             ImGui::EndChild();
+
+            ImGui::EndTabItem();
+        }
+
+        if (ImGui::BeginTabItem("Color"))
+        {
+            ImGui::ColorEdit4("Skeleton Color", reinterpret_cast<float *>(&g_config.esp.skeletonColor.Value));
+            ImGui::ColorEdit4("Box Color", reinterpret_cast<float *>(&g_config.esp.boxColorEnemy.Value));
 
             ImGui::EndTabItem();
         }

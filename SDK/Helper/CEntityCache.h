@@ -17,6 +17,47 @@
 //   schema_binding  + 0x20   = const char*        class name
 // ─────────────────────────────────────────────────────────────
 
+enum EPlayerFlags : uint8_t
+{
+    FLAG_DEFUSING    = 1 << 0,
+    FLAG_PLANTING    = 1 << 1,
+    FLAG_SCOPED      = 1 << 2,
+    FLAG_FLASHED     = 1 << 3,
+    FLAG_HAS_C4      = 1 << 4,
+    FLAG_HAS_DEFUSER = 1 << 5,
+    FLAG_HAS_HELMET  = 1 << 6
+};
+
+struct PlayerInfo
+{
+    std::string szName{};
+    int iHealth{};
+    int iMaxHealth{};
+    int iArmor{};
+    uint8_t flags{};
+    int iMoney{};
+    std::string szWeaponName{}; // might need another struct ;(((
+    int iMagCount{};
+    int iAmmoCount{};
+    int iMaxAmmoCount{};
+
+    [[nodiscard]] inline bool HasFlag(const uint8_t f) const
+    {
+        return (flags & f) != 0;
+    }
+
+    inline void SetFlag(const uint8_t f)
+    {
+        flags |= f;
+    }
+
+    inline void ClearFlag(const uint8_t f)
+    {
+        flags &= ~f;
+    }
+};
+
+
 static constexpr uintptr_t  k_entity_list_head_offset  = 0x200; // CEntityIdentity* head of alive linked list
 static constexpr uintptr_t  k_identity_handle          = 0x10;  // CEntityHandle (u32)
 static constexpr uintptr_t  k_identity_next            = 0x58;  // CEntityIdentity* pNext

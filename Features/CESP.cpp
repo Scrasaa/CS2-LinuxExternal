@@ -60,46 +60,6 @@ struct Bone
     std::byte padding[20];        // rest of 32-byte struct
 };
 
-enum EPlayerFlags : uint8_t
-{
-    FLAG_DEFUSING    = 1 << 0,
-    FLAG_PLANTING    = 1 << 1,
-    FLAG_SCOPED      = 1 << 2,
-    FLAG_FLASHED     = 1 << 3,
-    FLAG_HAS_C4      = 1 << 4,
-    FLAG_HAS_DEFUSER = 1 << 5,
-    FLAG_HAS_HELMET  = 1 << 6
-};
-
-struct PlayerInfo
-{
-    std::string szName{};
-    int iHealth{};
-    int iMaxHealth{};
-    int iArmor{};
-    uint8_t flags{};
-    int iMoney{};
-    std::string szWeaponName{}; // might need another struct ;(((
-    int iMagCount{};
-    int iAmmoCount{};
-    int iMaxAmmoCount{};
-
-    [[nodiscard]] inline bool HasFlag(const uint8_t f) const
-    {
-        return (flags & f) != 0;
-    }
-
-    inline void SetFlag(const uint8_t f)
-    {
-        flags |= f;
-    }
-
-    inline void ClearFlag(const uint8_t f)
-    {
-        flags &= ~f;
-    }
-};
-
 Utils::Math::Vector bone_position(const uintptr_t game_scene_node, const uint64_t bone_index)
 {
     const auto bone_data = R().ReadMem<uintptr_t>(
@@ -227,6 +187,9 @@ void CESP::Run()
         if (R().ReadMem<int8_t>(pawn + SCHEMA_OFFSET(C_CSPlayerPawn, m_bIsDefusing)))
             player_info.SetFlag(FLAG_DEFUSING);
 
+        if (R().ReadMem<float>(pawn + SCHEMA_OFFSET(C_CSPlayerPawnBase, m_flFlashDuration)) > 0.1f)
+            player_info.SetFlag(FLAG_FLASHED);
+
         auto player_item_services = R().ReadMem<uintptr_t>(pawn + SCHEMA_OFFSET(C_BasePlayerPawn, m_pItemServices));
 
         if (is_valid_ptr(player_item_services))
@@ -252,7 +215,6 @@ void CESP::Run()
 void CESP::DrawSkeleton(
     ImDrawList*  p_draw_list,
     const std::unordered_map<Bones, Utils::Math::Vector>& bone_map,
-    ImU32        color,
     float        thickness)
 {
     if (bone_map.empty())
@@ -272,40 +234,34 @@ void CESP::DrawSkeleton(
         if (!screen_a.has_value() || !screen_b.has_value())
             continue;
 
-        p_draw_list->AddLine(screen_a.value(), screen_b.value(), color, thickness);
+        p_draw_list->AddLine(screen_a.value(), screen_b.value(), g_config.esp.skeletonColor, thickness);
     }
 }
 
-// Rewrite this, calculate min max, in above and pass it to diff funcs
 void CESP::Draw2DBox(
-    ImDrawList*                                        p_draw_list,
+    ImDrawList*                                           p_draw_list,
     const std::unordered_map<Bones, Utils::Math::Vector>& bone_map,
-    const PlayerInfo&                                  player_info,
-    ImU32                                              box_color,
-    ImU32                                              text_color,
-    float                                              thickness)
+    const PlayerInfo&                                     player_info,
+    ImU32                                                 text_color,
+    float                                                 thickness)
 {
     float f_min_x = FLT_MAX,  f_min_y = FLT_MAX;
-    float f_max_x = -FLT_MAX, f_max_y = -FLT_MAX; // FLT_MIN != -FLT_MAX
-
-    bool b_any_valid = false;
+    float f_max_x = -FLT_MAX, f_max_y = -FLT_MAX;
+    bool  b_any_valid = false;
 
     for (const Bones bone : k_needed_bones)
     {
         const auto it = bone_map.find(bone);
         if (it == bone_map.end())
             continue;
-
         const auto screen = Utils::Math::WorldToScreen(it->second);
         if (!screen.has_value())
             continue;
-
         const ImVec2 v_pos = screen.value();
         f_min_x = std::min(f_min_x, v_pos.x);
         f_min_y = std::min(f_min_y, v_pos.y);
         f_max_x = std::max(f_max_x, v_pos.x);
         f_max_y = std::max(f_max_y, v_pos.y);
-
         b_any_valid = true;
     }
 
@@ -318,51 +274,46 @@ void CESP::Draw2DBox(
     f_max_x += k_padding;
     f_max_y += k_padding;
 
+    // --- Bounding box ---
     p_draw_list->AddRect(
         ImVec2(f_min_x, f_min_y),
         ImVec2(f_max_x, f_max_y),
-        box_color,
+        g_config.esp.boxColorEnemy,
         0.f,
         ImDrawFlags_None,
         thickness);
 
-    // --- Name label centered above the box ---
+    // --- Name label centered above box ---
     const ImVec2 v_text_size = ImGui::CalcTextSize(player_info.szName.c_str());
     const float  f_text_x    = f_min_x + ((f_max_x - f_min_x) - v_text_size.x) * 0.5f;
     const float  f_text_y    = f_min_y - v_text_size.y - 3.f;
-
     p_draw_list->AddText(ImVec2(f_text_x + 1.f, f_text_y + 1.f), IM_COL32(0, 0, 0, 200), player_info.szName.c_str());
     p_draw_list->AddText(ImVec2(f_text_x,        f_text_y),       text_color,              player_info.szName.c_str());
 
-    // --- Health bar ---
+    // --- Health bar (left side) ---
     const float f_health_frac = std::clamp(
         static_cast<float>(player_info.iHealth) / static_cast<float>(player_info.iMaxHealth),
         0.f, 1.f);
 
     constexpr float k_bar_width = 4.f;
     constexpr float k_bar_gap   = 8.f;
-
     const float f_bar_x = f_min_x - k_bar_gap;
     const float f_bar_y = f_min_y;
     const float f_bar_h = f_max_y - f_min_y;
 
-    // Background
     p_draw_list->AddRectFilled(
         ImVec2(f_bar_x,               f_bar_y),
         ImVec2(f_bar_x + k_bar_width, f_bar_y + f_bar_h),
         IM_COL32(0, 0, 0, 200));
 
-    // Green → red based on fraction
     const ImU32 u_health_color = IM_COL32(
         static_cast<int>((1.f - f_health_frac) * 255.f),
-        static_cast<int>(f_health_frac         * 255.f),
+        static_cast<int>(f_health_frac          * 255.f),
         0,
         255);
 
-    // Filled portion bottom-up
     const float f_filled_h  = f_bar_h * f_health_frac;
     const float f_filled_y0 = f_bar_y + (f_bar_h - f_filled_h);
-
     p_draw_list->AddRectFilled(
         ImVec2(f_bar_x,               f_filled_y0),
         ImVec2(f_bar_x + k_bar_width, f_bar_y + f_bar_h),
@@ -371,21 +322,58 @@ void CESP::Draw2DBox(
     // --- Health text ---
     char sz_health_text[8];
     snprintf(sz_health_text, sizeof(sz_health_text), "%d", player_info.iHealth);
-
     const ImVec2 v_hp_text_size = ImGui::CalcTextSize(sz_health_text);
+    const float  f_hp_text_x    = f_bar_x - v_hp_text_size.x - 4.f;
+    const float  f_hp_text_y    = f_filled_y0 - (v_hp_text_size.y * 0.5f);
+    p_draw_list->AddText(ImVec2(f_hp_text_x + 1.f, f_hp_text_y + 1.f),  IM_COL32(0, 0, 0, 200),         sz_health_text);
+    p_draw_list->AddText(ImVec2(f_hp_text_x,        f_hp_text_y),       IM_COL32(255, 255, 255, 255),   sz_health_text);
 
-    const float f_hp_text_x = f_bar_x - v_hp_text_size.x - 4.f; //+ (k_bar_width * 0.5f) - (v_hp_text_size.x * 0.5f);
-    const float f_hp_text_y = f_filled_y0 - (v_hp_text_size.y / 2);
+    // --- Status flags (below box) ---
+    constexpr float k_flag_gap   = 4.f;
+    constexpr float k_flag_pad_y = 3.f;
 
-    p_draw_list->AddText(
-        ImVec2(f_hp_text_x + 1.f, f_hp_text_y + 1.f),
-        IM_COL32(0, 0, 0, 200),
-        sz_health_text);
+    const float       f_flag_x =  f_max_x + 8.f; // + text size
+    float f_flag_y =  f_min_y + k_flag_pad_y;
 
-    p_draw_list->AddText(
-        ImVec2(f_hp_text_x, f_hp_text_y),
-        IM_COL32(255, 255, 255, 255),
-        sz_health_text);
+    const auto draw_flag = [&](const char* sz_label, ImU32 u_color)
+    {
+
+        static const ImU32 shadow_col = IM_COL32(0, 0, 0, 255);
+
+        p_draw_list->AddText(ImVec2(f_flag_x - 1.f, f_flag_y),      shadow_col, sz_label); // left
+        p_draw_list->AddText(ImVec2(f_flag_x + 1.f, f_flag_y),      shadow_col, sz_label); // right
+        p_draw_list->AddText(ImVec2(f_flag_x,       f_flag_y - 1.f), shadow_col, sz_label); // up
+        p_draw_list->AddText(ImVec2(f_flag_x,       f_flag_y + 1.f), shadow_col, sz_label); // down
+
+        // main text
+        p_draw_list->AddText(
+            ImVec2(f_flag_x, f_flag_y),
+                     u_color,
+            sz_label);
+
+        f_flag_y += v_text_size.y + k_flag_gap;
+    };
+
+    const unsigned int show = g_config.esp.player.uShowFlags;
+
+    if (player_info.iArmor > 0 && (show & FLAG_HAS_HELMET))
+    {
+        if (player_info.HasFlag(FLAG_HAS_HELMET))
+            draw_flag("HK", IM_COL32(100, 200, 255, 255));
+        else
+            draw_flag("K",  IM_COL32(150, 220, 255, 255));
+    }
+    if ((show & FLAG_SCOPED)      && player_info.HasFlag(FLAG_SCOPED))
+        draw_flag("*SCOPED*",  IM_COL32(255, 220,  80, 255));
+
+    if ((show & FLAG_HAS_DEFUSER) && player_info.HasFlag(FLAG_HAS_DEFUSER))
+        draw_flag("KIT",     IM_COL32( 80, 220, 255, 255));
+
+    if ((show & FLAG_DEFUSING)    && player_info.HasFlag(FLAG_DEFUSING))
+        draw_flag("*DEFUSING*",  IM_COL32(255,  80,  80, 255));
+
+    if ((show & FLAG_FLASHED)     && player_info.HasFlag(FLAG_FLASHED))
+        draw_flag("*FLASHED*",   IM_COL32(255, 255,   0, 255));
 }
 
 void CESP::DrawFOVIndicator(ImDrawList *p_draw_list, uintptr_t local_pawn)

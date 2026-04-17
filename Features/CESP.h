@@ -45,13 +45,11 @@ class CESP
 {
 public:
     void Run();
-    static void DrawSkeleton(ImDrawList* p_draw_list, const std::unordered_map<Bones, Utils::Math::Vector>& bone_map,
-                  ImU32 color = IM_COL32(255, 0, 0, 255), float thickness = 1.5f);
+    static void DrawSkeleton(ImDrawList* p_draw_list, const std::unordered_map<Bones, Utils::Math::Vector>& bone_map, float thickness = 1.5f);
 
     static void Draw2DBox(ImDrawList *p_draw_list,
                           const std::unordered_map<Bones, Utils::Math::Vector> &bone_map,
                           const PlayerInfo &player_info,
-                          ImU32 box_color = IM_COL32(255, 255, 255, 255),
                           ImU32 text_color = IM_COL32(255, 255, 255, 255),
                           float thickness = 1.5f);
 
