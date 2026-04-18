@@ -66,6 +66,7 @@ namespace cfg
             bool bTeam = false;
             bool bDraw2DBox = false;
             bool bSkeleton = false;
+            bool bActiveWeapon = false;
 
             unsigned int uShowFlags = 0;
         };

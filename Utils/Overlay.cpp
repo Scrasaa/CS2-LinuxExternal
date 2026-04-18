@@ -548,7 +548,7 @@ void DrawMenu()
                         CheckboxCompact("Draw Name", &g_config.esp.player.bName);
                         CheckboxCompact("Draw Health", &g_config.esp.player.bHealth);
                         CheckboxCompact("Only Visible", &g_config.esp.player.bVisible);
-                        CheckboxCompact("Draw Weapon", &g_config.esp.player.bWeapon);
+                        CheckboxCompact("Draw Active Weapon", &g_config.esp.player.bActiveWeapon);
                         CheckboxCompact("Draw Skeleton", &g_config.esp.player.bSkeleton);
 
                         ImGui::SeparatorText("Flag Indicators");

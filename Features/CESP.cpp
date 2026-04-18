@@ -350,7 +350,7 @@ void CESP::Draw2DBox(
     p_draw_list->AddText(ImVec2(f_hp_text_x,        f_hp_text_y),       IM_COL32(255, 255, 255, 255),   sz_health_text);
 
     // --- Active Weapon text (centered below box) ---
-    if (!player_info.szActiveWeaponName.empty())
+    if (g_config.esp.player.bActiveWeapon && !player_info.szActiveWeaponName.empty())
     {
         const ImVec2 v_weapon_text_size = ImGui::CalcTextSize(player_info.szActiveWeaponName.c_str());
         const float  f_weapon_text_x    = f_min_x + ((f_max_x - f_min_x) - v_weapon_text_size.x) * 0.5f;
