@@ -22,6 +22,7 @@ namespace Overlay
     bool Start();
 
     inline ImFont* small_font{nullptr};
+    inline ImFont* weapon_font{nullptr};
 
     // Explicit geometry variant — use when you already know the target
     // window / monitor rect.

@@ -95,6 +95,9 @@ namespace cfg
     void Load(const std::string& cfgName);
     void Save(const std::string& cfgName);
     void Delete(const std::string& cfgName);
+    void SetDefault(const std::string& cfgName);
+    std::string GetDefault();
+    bool LoadDefault();
 }
 
 inline cfg::Config g_config;

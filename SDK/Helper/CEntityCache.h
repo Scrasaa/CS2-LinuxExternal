@@ -37,9 +37,6 @@ struct PlayerInfo
     uint8_t flags{};
     int iMoney{};
     std::string szActiveWeaponName{"Unknown"};
-    int iMagCount{};
-    int iAmmoCount{};
-    int iMaxAmmoCount{};
     uint8_t bLifeState{};
 
     [[nodiscard]] inline bool HasFlag(const uint8_t f) const

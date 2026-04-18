@@ -22,6 +22,95 @@
 
 #define DEG2RAD(x) ((x) * (3.14159265358979323846 / 180.0))
 
+#include <string>
+#include <string_view>
+#include <unordered_map>
+#include <algorithm>
+#include <optional>
+
+// CS2 weapon icon font character lookup
+// Supports both internal CS2 weapon names (weapon_ak47) and display names (AK-47)
+std::optional<char> get_weapon_icon(std::string_view weapon_name)
+{
+    static const std::unordered_map<std::string_view, char> icon_map =
+    {
+        // ── Rifles ──────────────────────────────────────────────────────────
+        { "weapon_ak47",          'A' }, { "ak47",           'A' },
+        { "weapon_famas",         'G' }, { "famas",          'G' },
+        { "weapon_awp",           'C' }, { "awp",            'C' },
+        { "weapon_m4a1",          'N' }, { "m4a1",           'N' },
+        { "weapon_m4a1_silencer", 't' }, { "m4a1_silencer",  't' },
+        { "weapon_galilar",       'l' }, { "galilar",        'l' },
+        { "weapon_sg556",         'R' }, { "sg556",          'R' },
+        { "weapon_aug",           'B' }, { "aug",            'B' },
+        { "weapon_ssg08",         'e' }, { "ssg08",          'e' },
+        { "weapon_scar20",        'Y' }, { "scar20",         'Y' },
+        { "weapon_g3sg1",         'J' }, { "g3sg1",          'J' },
+
+        // ── SMGs ─────────────────────────────────────────────────────────────
+        { "weapon_mac10",         'b' }, { "mac10",          'b' },
+        { "weapon_mp9",           'o' }, { "mp9",            'o' },
+        //{ "weapon_mp5sd",         'T' }, { "mp5sd",          'T' }, not in font?
+        { "weapon_ump45",         'T' }, { "ump45",          'T' },
+        { "weapon_p90",           'Q' }, { "p90",            'Q' },
+        { "weapon_bizon",         'V' }, { "bizon",          'V' },
+        { "weapon_mp7",           'X' }, { "mp7",            'X' },
+
+        // ── Heavy ─────────────────────────────────────────────────────────────
+        { "weapon_nova",          'd' }, { "nova",           'd' },
+        { "weapon_xm1014",        'U' }, { "xm1014",         'U' },
+        { "weapon_sawedoff",      'a' }, { "sawedoff",       'a' },
+        { "weapon_mag7",          'Z' }, { "mag7",           'Z' },
+        { "weapon_m249",          'O' }, { "m249",           'O' },
+        { "weapon_negev",         'W' }, { "negev",          'W' },
+
+        // ── Pistols ───────────────────────────────────────────────────────────
+        { "weapon_deagle",        'E' }, { "deagle",         'E' },
+        { "weapon_elite",         'F' }, { "elite",          'F' },
+        { "weapon_glock",         'K' }, { "glock",          'K' },
+        { "weapon_hkp2000",       'i' }, { "hkp2000",        'i' },
+        { "weapon_usp_silencer",  'r' }, { "usp_silencer",   'r' },
+        { "weapon_p250",          'g' }, { "p250",           'g' },
+        { "weapon_fiveseven",     'H' }, { "fiveseven",      'H' },
+        { "weapon_tec9",          'c' }, { "tec9",           'c' },
+        { "weapon_cz75a",         'o' }, { "cz75a",          'o' },
+        { "weapon_revolver",      's' }, { "revolver",       's' },
+
+        // ── Grenades / Throwables ─────────────────────────────────────────────
+        { "weapon_hegrenade",     'L' }, { "hegrenade",      'L' },
+        { "weapon_flashbang",     'I' }, { "flashbang",      'I' },
+        { "weapon_smokegrenade",  'S' }, { "smokegrenade",   'S' },
+        { "weapon_molotov",       'h' }, { "molotov",        'h' },
+        { "weapon_incgrenade",    'm' }, { "incgrenade",     'm' },
+        { "weapon_decoy",         'j' }, { "decoy",          'j' },
+        { "weapon_c4",            'D' }, { "c4",             'D' },
+
+        // ── Melee ─────────────────────────────────────────────────────────────
+        { "weapon_knife",         'M' }, { "knife",          'M' },
+
+        // ── Equipment ─────────────────────────────────────────────────────────
+        { "item_kevlar",          'n' }, { "kevlar",         'n' },
+        { "item_assaultsuit",     'k' },
+        { "item_defuser",         'v' }, { "defuser",    'v' },
+        { "weapon_taser",         'f' }, { "taser",      'f' },
+
+        // ── Misc ──────────────────────────────────────────────────────────────
+        { "chicken",              'P' },
+        { "hostage",              'q' },
+        { "player",               'u' },
+    };
+
+    // Normalise to lowercase for case-insensitive lookup
+    std::string normalised{ weapon_name };
+    std::transform(normalised.begin(), normalised.end(), normalised.begin(),
+        [](unsigned char c) { return std::tolower(c); });
+
+    if (const auto it = icon_map.find(normalised); it != icon_map.end())
+        return it->second;
+
+    return std::nullopt;
+}
+
 inline constexpr std::array<std::pair<Bones, Bones>, 18> BoneConnections
 {{
     { Bones::Hip,          Bones::Spine1       },
@@ -124,7 +213,7 @@ void CESP::Run()
 
     auto local_team = R().ReadMem<int32_t>(local_pawn + SCHEMA_OFFSET(C_BaseEntity, m_iTeamNum));
 
-    for (const auto& [controlller, pawn] : g_EntityCache.get_entity_pairs())
+    for (const auto& [controller, pawn] : g_EntityCache.get_entity_pairs())
     {
         if (!is_valid_ptr(pawn))
             continue;
@@ -174,7 +263,7 @@ void CESP::Run()
             DrawSkeleton(p_draw_list, bone_map);
 
         PlayerInfo player_info{};
-        player_info.szName = R().ReadString(controlller + SCHEMA_OFFSET(CBasePlayerController, m_iszPlayerName));
+        player_info.szName = R().ReadString(controller + SCHEMA_OFFSET(CBasePlayerController, m_iszPlayerName));
         player_info.iHealth = R().ReadMem<int32_t>(pawn + SCHEMA_OFFSET(C_BaseEntity, m_iHealth));
         player_info.iMaxHealth = R().ReadMem<int32_t>(pawn + SCHEMA_OFFSET(C_BaseEntity, m_iMaxHealth));
         player_info.iArmor = R().ReadMem<int32_t>(pawn + SCHEMA_OFFSET(C_CSPlayerPawn, m_ArmorValue));
@@ -191,10 +280,17 @@ void CESP::Run()
                 const auto l_weapon_name_ptr = R().ReadMem<uintptr_t>(l_weapon_entity_identity + 0x20);  // 0x20 = m_designerName (pointer -> string)
                 if (is_valid_str_ptr(l_weapon_name_ptr))
                 {
-                    player_info.szActiveWeaponName = R().ReadString(l_weapon_name_ptr);
-                    static constexpr size_t prefix_len = 7; // "weapon_"
-                    if (player_info.szActiveWeaponName.size() > prefix_len)
-                        player_info.szActiveWeaponName.erase(0, prefix_len);
+                    std::string weapon_str = R().ReadString(l_weapon_name_ptr);
+                    if (weapon_str.size() > 7)
+                        weapon_str.erase(0, 7);
+
+                    auto& weapon_name = player_info.szActiveWeaponName;
+                    weapon_name.resize(weapon_str.size()); // Make it an option to choose between icon and name
+                    std::transform(weapon_str.begin(), weapon_str.end(), weapon_name.begin(),
+                                   [](unsigned char c)
+                                   {
+                                       return static_cast<char>(std::toupper(c));
+                                   }); // In future we want to use a Font that has weapon symbols
                 }
             }
         }
@@ -304,82 +400,93 @@ void CESP::Draw2DBox(
         ImDrawFlags_None,
         thickness);
 
-    // --- Name label centered above box ---
-    const ImVec2 v_text_size = ImGui::CalcTextSize(player_info.szName.c_str());
-    const float  f_text_x    = f_min_x + ((f_max_x - f_min_x) - v_text_size.x) * 0.5f;
-    const float  f_text_y    = f_min_y - v_text_size.y - 3.f;
-    p_draw_list->AddText(ImVec2(f_text_x + 1.f, f_text_y + 1.f), IM_COL32(0, 0, 0, 200), player_info.szName.c_str());
-    p_draw_list->AddText(ImVec2(f_text_x,        f_text_y),       text_color,              player_info.szName.c_str());
+    if (g_config.esp.player.bName)
+    {
+        // --- Name label centered above box ---
+        const ImVec2 v_text_size = ImGui::CalcTextSize(player_info.szName.c_str());
+        const float  f_text_x    = f_min_x + ((f_max_x - f_min_x) - v_text_size.x) * 0.5f;
+        const float  f_text_y    = f_min_y - v_text_size.y - 3.f;
+        p_draw_list->AddText(ImVec2(f_text_x + 1.f, f_text_y + 1.f), IM_COL32(0, 0, 0, 200), player_info.szName.c_str());
+        p_draw_list->AddText(ImVec2(f_text_x,        f_text_y),       text_color,              player_info.szName.c_str());
+    }
 
-    // --- Health bar (left side) ---
-    const float f_health_frac = std::clamp(
-        static_cast<float>(player_info.iHealth) / static_cast<float>(player_info.iMaxHealth),
-        0.f, 1.f);
+    if (g_config.esp.player.bHealth)
+    {
+        // --- Health bar (left side) ---
+        const float f_health_frac = std::clamp(
+            static_cast<float>(player_info.iHealth) / static_cast<float>(player_info.iMaxHealth),
+            0.f, 1.f);
 
-    constexpr float k_bar_width = 4.f; // Make this dynamic? based on box size
-    constexpr float k_bar_gap   = 8.f;
-    const float f_bar_x = f_min_x - k_bar_gap;
-    const float f_bar_y = f_min_y;
-    const float f_bar_h = f_max_y - f_min_y;
+        constexpr float k_bar_width = 4.f; // Make this dynamic? based on box size
+        constexpr float k_bar_gap   = 8.f;
+        const float f_bar_x = f_min_x - k_bar_gap;
+        const float f_bar_y = f_min_y;
+        const float f_bar_h = f_max_y - f_min_y;
 
-    p_draw_list->AddRectFilled(
-        ImVec2(f_bar_x,               f_bar_y),
-        ImVec2(f_bar_x + k_bar_width, f_bar_y + f_bar_h),
-        IM_COL32(0, 0, 0, 200));
+        p_draw_list->AddRectFilled(
+            ImVec2(f_bar_x,               f_bar_y),
+            ImVec2(f_bar_x + k_bar_width, f_bar_y + f_bar_h),
+            IM_COL32(0, 0, 0, 200));
 
-    const ImU32 u_health_color = IM_COL32(
-        static_cast<int>((1.f - f_health_frac) * 255.f),
-        static_cast<int>(f_health_frac          * 255.f),
-        0,
-        255);
+        const ImU32 u_health_color = IM_COL32(
+            static_cast<int>((1.f - f_health_frac) * 255.f),
+            static_cast<int>(f_health_frac          * 255.f),
+            0,
+            255);
 
-    const float f_filled_h  = f_bar_h * f_health_frac;
-    const float f_filled_y0 = f_bar_y + (f_bar_h - f_filled_h);
-    p_draw_list->AddRectFilled(
-        ImVec2(f_bar_x,               f_filled_y0),
-        ImVec2(f_bar_x + k_bar_width, f_bar_y + f_bar_h),
-        u_health_color);
+        const float f_filled_h  = f_bar_h * f_health_frac;
+        const float f_filled_y0 = f_bar_y + (f_bar_h - f_filled_h);
+        p_draw_list->AddRectFilled(
+            ImVec2(f_bar_x,               f_filled_y0),
+            ImVec2(f_bar_x + k_bar_width, f_bar_y + f_bar_h),
+            u_health_color);
 
-    // --- Health text ---
-    char sz_health_text[8];
-    snprintf(sz_health_text, sizeof(sz_health_text), "%d", player_info.iHealth);
-    const ImVec2 v_hp_text_size = ImGui::CalcTextSize(sz_health_text);
-    const float  f_hp_text_x    = f_bar_x - v_hp_text_size.x - 4.f;
-    const float  f_hp_text_y    = f_filled_y0 - (v_hp_text_size.y * 0.5f);
-    p_draw_list->AddText(ImVec2(f_hp_text_x + 1.f, f_hp_text_y + 1.f),  IM_COL32(0, 0, 0, 200),         sz_health_text);
-    p_draw_list->AddText(ImVec2(f_hp_text_x,        f_hp_text_y),       IM_COL32(255, 255, 255, 255),   sz_health_text);
+        // --- Health text ---
+        char sz_health_text[8];
+        snprintf(sz_health_text, sizeof(sz_health_text), "%d", player_info.iHealth);
+        const ImVec2 v_hp_text_size = ImGui::CalcTextSize(sz_health_text);
+        const float  f_hp_text_x    = f_bar_x - v_hp_text_size.x - 4.f;
+        const float  f_hp_text_y    = f_filled_y0 - (v_hp_text_size.y * 0.5f);
+        p_draw_list->AddText(ImVec2(f_hp_text_x + 1.f, f_hp_text_y + 1.f),  IM_COL32(0, 0, 0, 200),         sz_health_text);
+        p_draw_list->AddText(ImVec2(f_hp_text_x,       f_hp_text_y),       IM_COL32(255, 255, 255, 255),   sz_health_text);
+    }
 
     // --- Active Weapon text (centered below box) ---
     if (g_config.esp.player.bActiveWeapon && !player_info.szActiveWeaponName.empty())
     {
         const ImVec2 v_weapon_text_size = ImGui::CalcTextSize(player_info.szActiveWeaponName.c_str());
         const float  f_weapon_text_x    = f_min_x + ((f_max_x - f_min_x) - v_weapon_text_size.x) * 0.5f;
-        const float  f_weapon_text_y    = f_max_y + 3.f;
-        p_draw_list->AddText(ImVec2(f_weapon_text_x + 1.f, f_weapon_text_y + 1.f), IM_COL32(0, 0, 0, 200),         player_info.szActiveWeaponName.c_str());
-        p_draw_list->AddText(ImVec2(f_weapon_text_x,        f_weapon_text_y),       IM_COL32(255, 255, 255, 255),   player_info.szActiveWeaponName.c_str());
+        const float  f_weapon_text_y    = f_max_y;
+        p_draw_list->AddText( ImVec2{f_weapon_text_x + 1.f, f_weapon_text_y + 1.f}, IM_COL32(0, 0, 0, 200),              player_info.szActiveWeaponName.c_str());
+        p_draw_list->AddText( ImVec2{f_weapon_text_x, f_weapon_text_y}, IM_COL32(255, 255, 255, 255),        player_info.szActiveWeaponName.c_str());
+        /*
+        if (const auto icon = get_weapon_icon(player_info.szActiveWeaponName))
+        {
+            const char weapon_icon[2] = { *icon, '\0' };
+            p_draw_list->AddText(Overlay::weapon_font, 35.f, ImVec2(f_weapon_text_x, f_weapon_text_y), IM_COL32(255, 255, 255, 255), weapon_icon);
+        }
+        */
     }
 
     // --- Status flags (below box) ---
-    constexpr float k_flag_gap   = 2.f;
-    constexpr float k_flag_pad_y = 3.f;
+    static constexpr float k_flag_gap   = 2.f;
+    static constexpr float k_flag_pad_y = 3.f;
 
-    const float       f_flag_x =  f_max_x + 8.f; // + text size
-    float f_flag_y =  f_min_y + k_flag_pad_y;
+    const float f_flag_x = f_max_x + k_flag_gap;
+    float f_flag_y = f_min_y;
 
     const auto draw_flag = [&](const char* sz_label, const ImU32 u_color)
     {
         static constexpr ImU32 shadow_col = IM_COL32(0, 0, 0, 255);
         ImGui::PushFont(Overlay::small_font);
+        const ImVec2 v_text_size = ImGui::CalcTextSize(sz_label);
         p_draw_list->AddText(ImVec2(f_flag_x - 1.f, f_flag_y),      shadow_col, sz_label); // left
         p_draw_list->AddText(ImVec2(f_flag_x + 1.f, f_flag_y),      shadow_col, sz_label); // right
         p_draw_list->AddText(ImVec2(f_flag_x,       f_flag_y - 1.f), shadow_col, sz_label); // up
         p_draw_list->AddText(ImVec2(f_flag_x,       f_flag_y + 1.f), shadow_col, sz_label); // down
 
         // main text
-        p_draw_list->AddText(
-            ImVec2(f_flag_x, f_flag_y),
-                     u_color,
-            sz_label);
+        p_draw_list->AddText(ImVec2(f_flag_x, f_flag_y),u_color,sz_label);
         ImGui::PopFont();
         f_flag_y += v_text_size.y + k_flag_gap;
     };

@@ -409,6 +409,11 @@ static bool init(int x, int y, int w, int h)
     12.0f
     );
 
+    weapon_font = io.Fonts->AddFontFromFileTTF(
+        "/usr/share/fonts/TTF/csgo_icon_font.ttf",
+        35.0f
+    );
+
     ImGui::StyleColorsDark();
 
     ImGui_ImplX11_Init(g_ow.display, g_ow.window);
@@ -421,41 +426,143 @@ static bool init(int x, int y, int w, int h)
 // ─────────────────────────────────────────────────────────────────────────────
 // Menu Design
 // ─────────────────────────────────────────────────────────────────────────────
-
+const char* szESPSettings[] = { "Player", "Weapons", "C4", "Chickens?" };
 int idxEsp = 0;
 char cfgNameBuf[32] = "";
 
 int selectedCfgIndex = -1;
 
+enum class PendingAction
+{
+    No,
+    Save,
+    Delete
+};
+
+static auto pending_action = PendingAction::No;
+
 void DrawFileSelector()
 {
+    const auto configs    = cfg::GetConfigFiles();
+    const std::string def = cfg::GetDefault();
+
     ImGui::Text("Select a config file:");
 
-    const auto configs = cfg::GetConfigFiles();
-    float listHeight = ImGui::GetTextLineHeightWithSpacing() * configs.size();
+    const float list_height = ImGui::GetTextLineHeightWithSpacing()
+                              * static_cast<float>(configs.size());
 
-    ImGui::BeginChild("FileList", ImVec2(0, listHeight), true); // scrollable area
+    ImGui::BeginChild("FileList", ImVec2(0, list_height), true);
     {
-        for (int i = 0; i < configs.size(); i++)
+        for (int i = 0; i < static_cast<int>(configs.size()); i++)
         {
-            const bool isSelected = (i == selectedCfgIndex);
+            const bool is_selected = (i == selectedCfgIndex);
+            const bool is_default  = (configs[i] == def);
 
-            if (ImGui::Selectable(configs[i].c_str(), isSelected))
+            const std::string label = is_default
+                ? configs[i] + "  [default]"
+                : configs[i];
+
+            if (ImGui::Selectable(label.c_str(), is_selected))
                 selectedCfgIndex = i;
         }
-        ImGui::EndChild();
+    }
+    ImGui::EndChild();
+
+    const bool has_selection = (selectedCfgIndex >= 0)
+                               && (selectedCfgIndex < static_cast<int>(configs.size()));
+
+    if (!has_selection)
+        return;
+
+    const std::string& selected_name = configs[selectedCfgIndex];
+
+    if (ImGui::Button("Load"))
+        cfg::Load(selected_name);
+
+    ImGui::SameLine();
+    if (ImGui::Button("Save"))
+    {
+        pending_action = PendingAction::Save;
+        ImGui::OpenPopup("##confirm_save");
     }
 
-    if (selectedCfgIndex >= 0 && ImGui::Button("Save selected"))
-        cfg::Save(configs[selectedCfgIndex]);
+    ImGui::SameLine();
+    if (ImGui::Button("Delete"))
+    {
+        pending_action = PendingAction::Delete;
+        ImGui::OpenPopup("##confirm_delete");
+    }
 
+    ImGui::Separator();
 
-    if (selectedCfgIndex >= 0 && ImGui::Button("Load selected"))
-        cfg::Load(configs[selectedCfgIndex]);
+    if (selected_name == def)
+    {
+        if (ImGui::Button("Clear default"))
+            cfg::SetDefault({});
+    }
+    else
+    {
+        if (ImGui::Button("Set as default"))
+            cfg::SetDefault(selected_name);
+    }
 
+    if (!def.empty())
+    {
+        ImGui::SameLine();
+        ImGui::TextDisabled("(auto-loads \"%s\" on startup)", def.c_str());
+    }
 
-    if (selectedCfgIndex >= 0 && ImGui::Button("Delete selected"))
-        cfg::Delete(configs[selectedCfgIndex]);
+    // -------------------------------------------------------------------------
+    // Confirmation modals
+    // -------------------------------------------------------------------------
+
+    auto DrawConfirmPopup = [&](const char* popup_id, const char* message, auto on_confirm)
+    {
+        const ImVec2 center = ImGui::GetMainViewport()->GetCenter();
+        ImGui::SetNextWindowPos(center, ImGuiCond_Appearing, ImVec2(0.5f, 0.5f));
+
+        if (ImGui::BeginPopupModal(popup_id, nullptr, ImGuiWindowFlags_AlwaysAutoResize))
+        {
+            ImGui::TextUnformatted(message);
+            ImGui::Spacing();
+            ImGui::Separator();
+            ImGui::Spacing();
+
+            if (ImGui::Button("Yes", ImVec2(120, 0)))
+            {
+                on_confirm();
+                pending_action = PendingAction::No;
+                ImGui::CloseCurrentPopup();
+            }
+
+            ImGui::SameLine();
+
+            if (ImGui::Button("Cancel", ImVec2(120, 0)))
+            {
+                pending_action = PendingAction::No;
+                ImGui::CloseCurrentPopup();
+            }
+
+            ImGui::EndPopup();
+        }
+    };
+
+    const std::string save_msg   = "Overwrite \"" + selected_name + "\" with current settings?";
+    const std::string delete_msg = "Permanently delete \"" + selected_name + "\"?";
+
+    DrawConfirmPopup("##confirm_save", save_msg.c_str(), [&]()
+    {
+        cfg::Save(selected_name);
+    });
+
+    DrawConfirmPopup("##confirm_delete", delete_msg.c_str(), [&]()
+    {
+        if (selected_name == def)
+            cfg::SetDefault({});
+
+        cfg::Delete(selected_name);
+        selectedCfgIndex = -1;
+    });
 }
 
 bool CheckboxCompact(const char* label, bool* v)
@@ -585,6 +692,7 @@ void DrawMenu()
                 ImGui::Text("Filter Settings");
                 ImGui::Separator();
                 // dropdown select? test
+                ImGui::Combo("Choose Entity", &idxEsp, szESPSettings, IM_ARRAYSIZE(szESPSettings) );
 
                 ImGui::EndChild();
             }
@@ -688,6 +796,9 @@ static void run()
             const auto u32BtnOff              = R().ReadMem<uint32_t>(u64VtFn + 0x14);
 
             u64ButtonBase = u64InputBase + u32BtnOff;
+
+            // Just throwing it in here.. :D
+            cfg::LoadDefault();
         });
 
         // ── ImGui frame ───────────────────────────────────────────────────────

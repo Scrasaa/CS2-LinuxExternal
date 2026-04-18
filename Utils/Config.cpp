@@ -10,6 +10,7 @@
 using json = nlohmann::json;
 
 constexpr auto defaultCfgPath  = "/home/scrasa/.config/cs2-external/";
+constexpr auto k_default_cfg_path = "/home/scrasa/.config/cs2-external/default.json";
 
 //------------------------ Helper Functions
 
@@ -25,9 +26,6 @@ inline void to_json(nlohmann::json& j, const PlayerInfo& p)
         { "armor",          p.iArmor        },
         { "money",          p.iMoney        },
         { "weapon",         p.szActiveWeaponName  },
-        { "mag_count",      p.iMagCount     },
-        { "ammo_count",     p.iAmmoCount    },
-        { "max_ammo_count", p.iMaxAmmoCount },
     };
 
     auto& flags_node = j["flags"];
@@ -43,9 +41,6 @@ inline void from_json(const nlohmann::json& j, PlayerInfo& p)
     j.at("armor")          .get_to(p.iArmor);
     j.at("money")          .get_to(p.iMoney);
     j.at("weapon")         .get_to(p.szActiveWeaponName);
-    j.at("mag_count")      .get_to(p.iMagCount);
-    j.at("ammo_count")     .get_to(p.iAmmoCount);
-    j.at("max_ammo_count") .get_to(p.iMaxAmmoCount);
 
     p.flags = 0;
     const auto& flags_node = j.at("flags");
@@ -222,4 +217,32 @@ void cfg::Delete(const std::string& cfgName)
 
     if (std::filesystem::exists(filePath))
         std::filesystem::remove(filePath);
+}
+
+void cfg::SetDefault(const std::string& cfgName)
+{
+    std::ofstream file(k_default_cfg_path, std::ios::trunc);
+    if (file.is_open())
+        file << cfgName;
+}
+
+std::string cfg::GetDefault()
+{
+    std::ifstream file(k_default_cfg_path);
+    if (!file.is_open())
+        return {};
+
+    std::string name;
+    std::getline(file, name);
+    return name;
+}
+
+bool cfg::LoadDefault()
+{
+    const std::string default_name = cfg::GetDefault();
+    if (default_name.empty())
+        return false;
+
+    cfg::Load(default_name);
+    return true;
 }
