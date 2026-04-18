@@ -281,7 +281,7 @@ std::vector<uintptr_t> CUtils::PatternScanAll(const std::string& moduleName,
     // Elf64_Ehdr offsets
     const uintptr_t first_entry = ReadMem<uint64_t>(base_address + 0x20) + base_address; // e_phoff
     const uint64_t  entry_size  = ReadMem<uint16_t>(base_address + 0x36);                // e_phentsize
-    const uint16_t  num_entries = ReadMem<uint16_t>(base_address + 0x38);                // e_phnum
+    const auto  num_entries = ReadMem<uint16_t>(base_address + 0x38);                // e_phnum
 
     for (uint16_t i = 0; i < num_entries; ++i)
     {
@@ -306,7 +306,7 @@ std::vector<uintptr_t> CUtils::PatternScanAll(const std::string& moduleName,
 
     while (true)
     {
-        const uint64_t tag_value = ReadMem<uint64_t>(address);
+        const auto tag_value = ReadMem<uint64_t>(address);
         if (tag_value == 0) // DT_NULL
             break;
 
@@ -333,7 +333,7 @@ std::vector<uintptr_t> CUtils::PatternScanAll(const std::string& moduleName,
 
     while (true)
     {
-        const uint32_t st_name = ReadMem<uint32_t>(symbol_table);
+        const auto st_name = ReadMem<uint32_t>(symbol_table);
         if (st_name == 0)
             break;
 
@@ -361,7 +361,7 @@ std::vector<uintptr_t> CUtils::PatternScanAll(const std::string& moduleName,
     //              bytes at +0x03 = rel32, instruction ends at +0x07
     const uintptr_t export_address   = export_fn + 0x10;
     const uintptr_t p_interface_list = ResolveRelativeAddress(export_address, 0x03, 0x07);
-    uintptr_t       p_entry          = ReadMem<uintptr_t>(p_interface_list);
+    auto            p_entry          = ReadMem<uintptr_t>(p_interface_list);
 
     while (is_valid_ptr(p_entry))
     {
@@ -369,12 +369,12 @@ std::vector<uintptr_t> CUtils::PatternScanAll(const std::string& moduleName,
         //   +0x00  uintptr_t    m_pfnCreate   — creator stub ptr
         //   +0x08  const char*  m_pszName     — interface name
         //   +0x10  InterfaceReg* m_pNext      — linked list
-        const uintptr_t ppsz_name  = ReadMem<uintptr_t>(p_entry + 0x08);
+        const auto ppsz_name  = ReadMem<uintptr_t>(p_entry + 0x08);
         const auto      entry_name = ReadString(ppsz_name);
 
         if (entry_name.starts_with(interface_name))
         {
-            const uintptr_t vfunc_address = ReadMem<uintptr_t>(p_entry);
+            const auto vfunc_address = ReadMem<uintptr_t>(p_entry);
             return ResolveRelativeAddress(vfunc_address, 0x03, 0x07);
         }
 
