@@ -179,6 +179,26 @@ void CESP::Run()
         player_info.iMaxHealth = R().ReadMem<int32_t>(pawn + SCHEMA_OFFSET(C_BaseEntity, m_iMaxHealth));
         player_info.iArmor = R().ReadMem<int32_t>(pawn + SCHEMA_OFFSET(C_CSPlayerPawn, m_ArmorValue));
 
+        // Active Weapon Name
+        const auto l_weapon_entity_instance = R().ReadMem<uintptr_t>(pawn + SCHEMA_OFFSET(C_CSPlayerPawn, m_pClippingWeapon));
+
+        if (is_valid_ptr(l_weapon_entity_instance))
+        {
+            const auto l_weapon_entity_identity = R().ReadMem<uintptr_t>(l_weapon_entity_instance + 0x10); // add later to defs.h |   // CEntityIdentity, 0x10 = m_pEntity
+
+            if (is_valid_ptr(l_weapon_entity_identity))
+            {
+                const auto l_weapon_name_ptr = R().ReadMem<uintptr_t>(l_weapon_entity_identity + 0x20);  // 0x20 = m_designerName (pointer -> string)
+                if (is_valid_str_ptr(l_weapon_name_ptr))
+                {
+                    player_info.szActiveWeaponName = R().ReadString(l_weapon_name_ptr);
+                    static constexpr size_t prefix_len = 7; // "weapon_"
+                    if (player_info.szActiveWeaponName.size() > prefix_len)
+                        player_info.szActiveWeaponName.erase(0, prefix_len);
+                }
+            }
+        }
+
         // Flags
         player_info.flags = 0;
 
@@ -329,6 +349,16 @@ void CESP::Draw2DBox(
     p_draw_list->AddText(ImVec2(f_hp_text_x + 1.f, f_hp_text_y + 1.f),  IM_COL32(0, 0, 0, 200),         sz_health_text);
     p_draw_list->AddText(ImVec2(f_hp_text_x,        f_hp_text_y),       IM_COL32(255, 255, 255, 255),   sz_health_text);
 
+    // --- Active Weapon text (centered below box) ---
+    if (!player_info.szActiveWeaponName.empty())
+    {
+        const ImVec2 v_weapon_text_size = ImGui::CalcTextSize(player_info.szActiveWeaponName.c_str());
+        const float  f_weapon_text_x    = f_min_x + ((f_max_x - f_min_x) - v_weapon_text_size.x) * 0.5f;
+        const float  f_weapon_text_y    = f_max_y + 3.f;
+        p_draw_list->AddText(ImVec2(f_weapon_text_x + 1.f, f_weapon_text_y + 1.f), IM_COL32(0, 0, 0, 200),         player_info.szActiveWeaponName.c_str());
+        p_draw_list->AddText(ImVec2(f_weapon_text_x,        f_weapon_text_y),       IM_COL32(255, 255, 255, 255),   player_info.szActiveWeaponName.c_str());
+    }
+
     // --- Status flags (below box) ---
     constexpr float k_flag_gap   = 2.f;
     constexpr float k_flag_pad_y = 3.f;
@@ -353,8 +383,6 @@ void CESP::Draw2DBox(
         ImGui::PopFont();
         f_flag_y += v_text_size.y + k_flag_gap;
     };
-
-
 
     const unsigned int show = g_config.esp.player.uShowFlags;
 

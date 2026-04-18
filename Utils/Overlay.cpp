@@ -425,7 +425,6 @@ static bool init(int x, int y, int w, int h)
 int idxEsp = 0;
 char cfgNameBuf[32] = "";
 
-
 int selectedCfgIndex = -1;
 
 void DrawFileSelector()
@@ -683,10 +682,10 @@ static void run()
 
         std::call_once(initFlag, []()
         {
-            auto input_mod               = R().GetModuleBase( "libinputsystem.so");
-            auto u64InputBase            = R().GetInterfaceOffset(input_mod,"InputSystemVersion0").value();
-            auto u64VtFn                        = R().ReadMem<uint64_t>( R().ReadMem<uint64_t>(u64InputBase) + 19 * 8); // vtable slot 19
-            auto u32BtnOff                      =  R().ReadMem<uint32_t>(u64VtFn + 0x14);
+            const auto input_mod               = R().GetModuleBase( "libinputsystem.so");
+            const auto u64InputBase            = R().GetInterfaceOffset(input_mod,"InputSystemVersion0").value();
+            const auto u64VtFn            = R().ReadMem<uint64_t>( R().ReadMem<uint64_t>(u64InputBase) + 19 * 8); // vtable slot 19
+            const auto u32BtnOff              = R().ReadMem<uint32_t>(u64VtFn + 0x14);
 
             u64ButtonBase = u64InputBase + u32BtnOff;
         });
@@ -719,18 +718,16 @@ static void run()
 
         if (g_menu_visible)
         {
-            // ── Draw your menu here ───────────────────────────────────────────
             DrawMenu();
         }
 
-        Input g_input{};
+        Input g_input{}; // should this be static? or somewhere else xd
 
         auto fn_read = [](uint64_t u64_addr, void* p_dst, size_t sz) -> bool
         {
             return R().ReadRaw(u64_addr, p_dst, sz);
         };
 
-        // in your loop:
         g_input.update(fn_read, u64ButtonBase);
 
         g_MapManager.update();

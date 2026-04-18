@@ -24,7 +24,7 @@ inline void to_json(nlohmann::json& j, const PlayerInfo& p)
         { "max_health",     p.iMaxHealth    },
         { "armor",          p.iArmor        },
         { "money",          p.iMoney        },
-        { "weapon",         p.szWeaponName  },
+        { "weapon",         p.szActiveWeaponName  },
         { "mag_count",      p.iMagCount     },
         { "ammo_count",     p.iAmmoCount    },
         { "max_ammo_count", p.iMaxAmmoCount },
@@ -42,7 +42,7 @@ inline void from_json(const nlohmann::json& j, PlayerInfo& p)
     j.at("max_health")     .get_to(p.iMaxHealth);
     j.at("armor")          .get_to(p.iArmor);
     j.at("money")          .get_to(p.iMoney);
-    j.at("weapon")         .get_to(p.szWeaponName);
+    j.at("weapon")         .get_to(p.szActiveWeaponName);
     j.at("mag_count")      .get_to(p.iMagCount);
     j.at("ammo_count")     .get_to(p.iAmmoCount);
     j.at("max_ammo_count") .get_to(p.iMaxAmmoCount);

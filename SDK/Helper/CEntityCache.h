@@ -30,16 +30,17 @@ enum EPlayerFlags : uint8_t
 
 struct PlayerInfo
 {
-    std::string szName{};
+    std::string szName{"Unknown"};
     int iHealth{};
     int iMaxHealth{};
     int iArmor{};
     uint8_t flags{};
     int iMoney{};
-    std::string szWeaponName{}; // might need another struct ;(((
+    std::string szActiveWeaponName{"Unknown"};
     int iMagCount{};
     int iAmmoCount{};
     int iMaxAmmoCount{};
+    uint8_t bLifeState{};
 
     [[nodiscard]] inline bool HasFlag(const uint8_t f) const
     {
@@ -110,7 +111,7 @@ public:
     // Callback signature: bool(int32_t index, uintptr_t p_instance)
     //   return true  → continue
     //   return false → stop early  (IterResult::Aborted)
-    [[nodiscard]] IterResult iterate(std::function<bool(int32_t, uintptr_t)> a_fn) const;
+    [[nodiscard]] IterResult iterate(const std::function<bool(int32_t, uintptr_t)>& a_fn) const;
 
     // Schema class name helpers
     [[nodiscard]] std::string get_classname(uintptr_t a_p_entity_instance) const;

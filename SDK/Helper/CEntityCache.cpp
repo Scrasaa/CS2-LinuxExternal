@@ -211,7 +211,7 @@ int32_t CEntityCache::get_count() const
 //  Callback returns true to continue, false to stop early.
 
 CEntityCache::IterResult CEntityCache::iterate(
-    std::function<bool(int32_t, uintptr_t)> a_fn) const
+    const std::function<bool(int32_t, uintptr_t)>& a_fn) const
 {
     if (!is_valid_ptr(m_p_entity_list))
         return IterResult::InvalidList;

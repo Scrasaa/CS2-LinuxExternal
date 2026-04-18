@@ -389,7 +389,6 @@ inline static bool is_valid_str_ptr(uintptr_t p)
     return p > 0x400000 && p != k_sentinel; // no alignment requirement for char*
 }
 
-
 inline static bool is_valid_struct_ptr(uintptr_t p)
 {
     return p > 0x400000 && p != k_sentinel && (p & 0x3) == 0;
