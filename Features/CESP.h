@@ -3,9 +3,6 @@
 
 #include <cstdint>
 #include <unordered_map>
-#include <optional>
-
-#include "imgui.h"
 #include "Utils/Utils.h"
 
 struct PlayerInfo;

@@ -199,6 +199,21 @@ static void draw_weapon_label(const ScreenBounds& bounds, const std::string& wea
     Overlay::draw_list->AddText(ImVec2(x,        y),       IM_COL32(255, 255, 255, 255), weapon_name.c_str());
 }
 
+static void draw_weapon_icon(const ScreenBounds& bounds, const std::string& weapon_name)
+{
+    const ImVec2 size = ImGui::CalcTextSize(weapon_name.c_str());
+    const float  x    = bounds.min_x + ((bounds.max_x - bounds.min_x) - size.x) * 0.5f;
+    const float  y    = bounds.max_y;
+    const std::string& icon_str = get_weapon_icon(weapon_name);
+
+    Overlay::draw_list->AddText(
+        Overlay::weapon_font,
+        20.f,
+        ImVec2(x, y),
+        IM_COL32(255, 255, 255, 255),
+        icon_str.c_str());
+}
+
 static void draw_status_flags(const ScreenBounds& bounds, const PlayerInfo& player_info)
 {
     constexpr float gap = 2.f;
@@ -348,7 +363,7 @@ void CESP::Run()
             draw_health_bar(*bounds, player_info.iHealth, player_info.iMaxHealth);
 
         if (g_config.esp.player.bActiveWeapon && !player_info.szActiveWeaponName.empty())
-            draw_weapon_label(*bounds, player_info.szActiveWeaponName);
+            g_config.esp.player.bActiveWeaponIcon ? draw_weapon_icon(*bounds, player_info.szActiveWeaponName) : draw_weapon_label(*bounds, player_info.szActiveWeaponName);
 
         draw_status_flags(*bounds, player_info);
 

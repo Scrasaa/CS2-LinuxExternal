@@ -123,6 +123,7 @@ void cfg::Load(const std::string& cfgName)
     g_config.esp.player.bHealth         = jPlayerESP.value("bHealth", g_config.esp.player.bHealth);
     g_config.esp.player.bSkeleton       = jPlayerESP.value("bSkeleton", g_config.esp.player.bSkeleton);
     g_config.esp.player.bActiveWeapon   = jPlayerESP.value("bActiveWeapon", g_config.esp.player.bActiveWeapon);
+    g_config.esp.player.bActiveWeaponIcon   = jPlayerESP.value("bActiveWeaponIcon", g_config.esp.player.bActiveWeaponIcon);
 
     g_config.esp.boxColorEnemy  =  JsonToImColor(jPlayerESP.value("boxColorEnemy", ImColorToJson(g_config.esp.boxColorEnemy)));
     g_config.esp.skeletonColor  =  JsonToImColor(jPlayerESP.value("skeletonColor", ImColorToJson(g_config.esp.skeletonColor)));
@@ -171,6 +172,7 @@ void cfg::Save(const std::string& cfgName)
         {"bSkeleton", g_config.esp.player.bSkeleton},
         {"bName", g_config.esp.player.bName},
         {"bActiveWeapon", g_config.esp.player.bActiveWeapon},
+        {"bActiveWeaponIcon", g_config.esp.player.bActiveWeaponIcon},
         {"bAmmo", g_config.esp.player.bAmmo},
         {"bHealth", g_config.esp.player.bHealth},
         {"bDraw2DBox", g_config.esp.player.bDraw2DBox},

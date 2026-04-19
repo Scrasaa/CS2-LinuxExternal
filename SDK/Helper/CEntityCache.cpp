@@ -95,7 +95,7 @@ bool CEntityCache::refresh()
     std::vector<uintptr_t> new_entities;
     new_entities.reserve(64);
 
-    for (uint32_t i = 1; i <= 256; ++i)
+    for (uint32_t i = 1; i <= 64; ++i)
     {
         const uint32_t bucket       = i >> 9;
         const uint32_t index        = i & 0x1FF;

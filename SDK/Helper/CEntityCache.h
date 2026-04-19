@@ -27,7 +27,7 @@ enum EPlayerFlags : uint8_t
     FLAG_HAS_DEFUSER = 1 << 5,
     FLAG_HAS_HELMET  = 1 << 6
 };
-
+// maybe we need localPlayerInfo?
 struct PlayerInfo
 {
     std::string szName{"Unknown"};
