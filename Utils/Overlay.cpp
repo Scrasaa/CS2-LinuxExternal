@@ -32,6 +32,7 @@
 #include "Features/CAimbot.h"
 #include "Features/CESP.h"
 #include "Features/CTriggerbot.h"
+#include "Features/CVisuals.h"
 #include "SDK/Helper/CInput.h"
 #include "SDK/Helper/ConVar.h"
 
@@ -410,7 +411,7 @@ static bool init(int x, int y, int w, int h)
     );
 
     weapon_font = io.Fonts->AddFontFromFileTTF(
-        "/usr/share/fonts/TTF/csgo_icon_font.ttf",
+        "/home/scrasa/.local/share/fonts/obs_icons.ttf",
         35.0f
     );
 
@@ -843,9 +844,19 @@ static void run()
 
         g_MapManager.update();
         g_is_ffa = IsFFA(g_offsets);
-        F::ESP.Run();
-        if (g_input.is_key_pressed(CS2KeyCode::MouseLeft)) F::Aimbot.Run();
-        if (g_input.is_key_pressed(CS2KeyCode::Mouse5)) F::Triggerbot.Run();
+
+        Overlay::draw_list = ImGui::GetForegroundDrawList();
+
+        if (Overlay::draw_list && g_EntityCache.refresh())
+        {
+            F::ESP.Run();
+            if (g_input.is_key_pressed(CS2KeyCode::MouseLeft)) F::Aimbot.Run();
+            if (g_input.is_key_pressed(CS2KeyCode::Mouse5)) F::Triggerbot.Run();
+
+            F::Visuals.DrawSpectatorList();
+            if (g_config.visuals.bDrawFovCircle)
+                F::Visuals.DrawFOVIndicator();
+        }
 
         ImGui::Render();
 

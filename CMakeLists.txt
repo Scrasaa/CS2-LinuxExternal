@@ -63,6 +63,8 @@ add_executable(CS2_LinuxExternal
         Thirdparty/json.h
         SDK/Helper/ConVar.h
         SDK/Helper/ConVar.cpp
+        Features/CVisuals.cpp
+        Features/CVisuals.h
 )
 
 # ── Include dirs ──────────────────────────────────────────────────────────────

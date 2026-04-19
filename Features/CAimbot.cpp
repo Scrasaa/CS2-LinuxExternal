@@ -49,9 +49,9 @@ ScreenPunch punch_to_screen(float punch_yaw_deg, float punch_pitch_deg) noexcept
 }
 
 // ── Target selection ──────────────────────────────────────────────────────────
-uintptr_t CAimbot::GetClosestToScreen(uintptr_t local_pawn)
+uintptr_t CAimbot::GetClosestToScreen()
 {
-    const auto local_team      = R().ReadMem<int32_t>(local_pawn + SCHEMA_OFFSET(C_BaseEntity, m_iTeamNum));
+    const auto local_team      = R().ReadMem<int32_t>(g_EntityCache.m_local_pawn + SCHEMA_OFFSET(C_BaseEntity, m_iTeamNum));
     float      f_closest_dist  = FLT_MAX;
     uintptr_t  target_pawn     = 0;
 
@@ -133,20 +133,10 @@ void CAimbot::Run()
     if (!g_config.aimbot.bEnable)
         return;
 
-    if (!g_EntityCache.refresh())
+    if (R().ReadMem<uint8_t>(g_EntityCache.m_local_pawn + SCHEMA_OFFSET(C_BaseEntity, m_lifeState)) != 0)
         return;
 
-    const auto local_pawn = g_EntityCache.resolve_entity_from_handle(
-        R().ReadMem<uintptr_t>(g_EntityCache.m_p_localplayer_controller
-            + SCHEMA_OFFSET(CBasePlayerController, m_hPawn)));
-
-    if (!is_valid_ptr(local_pawn))
-        return;
-
-    if (R().ReadMem<uint8_t>(local_pawn + SCHEMA_OFFSET(C_BaseEntity, m_lifeState)) != 0)
-        return;
-
-    const auto target = GetClosestToScreen(local_pawn);
+    const auto target = GetClosestToScreen();
     if (!is_valid_ptr(target))
         return;
 
@@ -155,7 +145,7 @@ void CAimbot::Run()
         return;
 
     const auto head_pos       = bone_position(target_gsn, static_cast<uint64_t>(Bones::Head));
-    const auto local_gsn      = R().ReadMem<uintptr_t>(local_pawn + SCHEMA_OFFSET(C_BaseEntity, m_pGameSceneNode));
+    const auto local_gsn      = R().ReadMem<uintptr_t>(g_EntityCache.m_local_pawn + SCHEMA_OFFSET(C_BaseEntity, m_pGameSceneNode));
     const auto local_head_pos = bone_position(local_gsn, static_cast<uint64_t>(Bones::Head));
 
     if (g_config.aimbot.bVisible)
@@ -172,8 +162,7 @@ void CAimbot::Run()
 
     const auto screen_head_pos = head_w2s.value();
 
-    //const auto v_punch = R().ReadMem<ImVec2>(local_pawn + SCHEMA_OFFSET(C_BasePlayerPawn, m_flAimPunchAngle));
-
+    //const auto v_punch = R().ReadMem<ImVec2>(g_EntityCache.m_local_pawn + SCHEMA_OFFSET(C_BasePlayerPawn, m_flAimPunchAngle));
 
     // ── Smoothing value reference ─────────────────────────────────────────────
     // smoothing    behaviour                       detection risk

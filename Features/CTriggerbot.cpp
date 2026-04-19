@@ -23,18 +23,11 @@ void CTriggerbot::Run()
     if (!g_config.triggerbot.bEnable)
         return;
 
-    const auto  l_local_pawn_handle = R().ReadMem<uint32_t>(
-        g_EntityCache.m_p_localplayer_controller + SCHEMA_OFFSET(CBasePlayerController, m_hPawn));
-
-    const uintptr_t lp_local_pawn = g_EntityCache.resolve_entity_from_handle(l_local_pawn_handle);
-    if (!is_valid_ptr(lp_local_pawn))
+    if (R().ReadMem<uint8_t>(g_EntityCache.m_local_pawn + SCHEMA_OFFSET(C_BaseEntity, m_lifeState)) != 0)
         return;
 
-    if (R().ReadMem<uint8_t>(lp_local_pawn + SCHEMA_OFFSET(C_BaseEntity, m_lifeState)) != 0)
-        return;
-
-    const auto l_local_team = R().ReadMem<int32_t>(lp_local_pawn + SCHEMA_OFFSET(C_BaseEntity, m_iTeamNum));
-    const auto l_ent_idx    = R().ReadMem<int32_t>(lp_local_pawn + SCHEMA_OFFSET(C_CSPlayerPawn, m_iIDEntIndex));
+    const auto l_local_team = R().ReadMem<int32_t>(g_EntityCache.m_local_pawn + SCHEMA_OFFSET(C_BaseEntity, m_iTeamNum));
+    const auto l_ent_idx    = R().ReadMem<int32_t>(g_EntityCache.m_local_pawn + SCHEMA_OFFSET(C_CSPlayerPawn, m_iIDEntIndex));
 
     if (l_ent_idx < 1)
     {

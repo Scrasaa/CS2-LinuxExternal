@@ -81,55 +81,48 @@ uintptr_t CEntityCache::read_entity_at_index(uint32_t a_index) const
 
 bool CEntityCache::refresh()
 {
-    m_entities.clear();
-
     if (!is_valid_ptr(m_p_entity_list))
         return false;
 
-    m_p_localplayer_controller = R().ReadMem<uintptr_t>(m_p_localplayer);
-
-    if (!is_valid_ptr(m_p_localplayer_controller))
+    m_local_controller = R().ReadMem<uintptr_t>(m_localplayer_ptr);
+    if (!is_valid_ptr(m_local_controller))
         return false;
 
-    for (uint32_t i = 1; i <= 64; ++i)
+    m_local_pawn = resolve_entity_from_handle(R().ReadMem<uintptr_t>(m_local_controller + SCHEMA_OFFSET(CBasePlayerController, m_hPawn)));
+    if (!is_valid_ptr(m_local_pawn))
+        return false;
+
+    std::vector<uintptr_t> new_entities;
+    new_entities.reserve(64);
+
+    for (uint32_t i = 1; i <= 256; ++i)
     {
-        const uint32_t  l_bucket_index    = i >> 9;
-        const uint32_t  l_index_in_bucket = i & 0x1FF;
+        const uint32_t bucket       = i >> 9;
+        const uint32_t index        = i & 0x1FF;
 
-        const auto lp_chunk = R().ReadMem<uintptr_t>(
-            m_p_entity_list + sizeof(uintptr_t) * l_bucket_index);
-
-        if (!is_valid_ptr(lp_chunk))
+        const auto chunk = R().ReadMem<uintptr_t>(
+            m_p_entity_list + sizeof(uintptr_t) * bucket);
+        if (!is_valid_ptr(chunk))
             continue;
 
-        const auto lp_instance = R().ReadMem<uintptr_t>(
-            lp_chunk + k_entity_identity_size * l_index_in_bucket);
+        const uintptr_t identity = chunk + k_entity_identity_size * index;
 
-        if (!is_valid_ptr(lp_instance))
+        const auto handle = R().ReadMem<uint32_t>(identity + k_identity_handle);
+        if ((handle & 0x7FFF) != i)
             continue;
 
-        // Read handle from identity (+0x10), validate slot matches
-        const uintptr_t lp_identity = lp_chunk + k_entity_identity_size * l_index_in_bucket;
-        const auto  l_handle    = R().ReadMem<uint32_t>(lp_identity + k_identity_handle);
-
-        if ((l_handle & 0x7FFF) != i)
+        const auto controller = R().ReadMem<uintptr_t>(identity);
+        if (!is_valid_ptr(controller) || controller == m_local_controller)
             continue;
 
-        const auto lp_controller = R().ReadMem<uintptr_t>(lp_identity);
-        if (!is_valid_ptr(lp_controller))
+        if (!is_class(controller, "CCSPlayerController"))
             continue;
 
-        if (lp_controller == m_p_localplayer_controller)
-            continue;
-
-        // Validate it’s a controller - later sort it
-        if (!is_class(lp_controller, "CCSPlayerController"))
-            continue;
-
-        m_entities.push_back(lp_controller);
+        new_entities.push_back(controller);
     }
 
-    return !m_entities.empty();
+    m_entities = std::move(new_entities);
+    return true;
 }
 
 // ── Controllers ───────────────────────────────────────────────

@@ -35,9 +35,10 @@ struct PlayerInfo
     int iMaxHealth{};
     int iArmor{};
     uint8_t flags{};
-    int iMoney{};
+    int iMoney{}; // remove
     std::string szActiveWeaponName{"Unknown"};
     uint8_t bLifeState{};
+    int iTeamNum{};
 
     [[nodiscard]] inline bool HasFlag(const uint8_t f) const
     {
@@ -66,8 +67,9 @@ static constexpr uintptr_t  k_entity_identity_size     = 0x70;  // sizeof(CEntit
 class CEntityCache
 {
 public:
-    uintptr_t m_p_localplayer = 0;
-    uintptr_t m_p_localplayer_controller = 0;
+    uintptr_t m_localplayer_ptr = 0;
+    uintptr_t m_local_controller = 0;
+    uintptr_t m_local_pawn = 0;
 
     // Paired controller + pawn, both guaranteed non-null
     struct EntityPair

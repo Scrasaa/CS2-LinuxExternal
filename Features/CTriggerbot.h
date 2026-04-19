@@ -6,12 +6,11 @@
 #define CS2_LINUXEXTERNAL_CTRIGGERBOT_H
 #include <chrono>
 
-
 class CTriggerbot
 {
-public:
     std::optional<std::chrono::steady_clock::time_point> m_acquire_time;
     int m_reaction_ms = 0;
+public:
     void Run();
 };
 

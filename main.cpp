@@ -165,21 +165,21 @@ int main()
         return 1;
     }
 
-    g_EntityCache.m_p_localplayer = utils.GetAbsoluteAddress(pattern_hit_lp, 3, 8);
-    if (!g_EntityCache.m_p_localplayer)
+    g_EntityCache.m_localplayer_ptr = utils.GetAbsoluteAddress(pattern_hit_lp, 3, 8);
+    if (!g_EntityCache.m_localplayer_ptr)
     {
         std::cerr << "[-] Failed to resolve g_EntityCache.m_p_localplayer.\n";
         CUtils::Shutdown();
         return 1;
     }
 
-    printf("LocalPlayer 0x%llx\n", static_cast<unsigned long long>(g_EntityCache.m_p_localplayer));
+    printf("LocalPlayer 0x%llx\n", static_cast<unsigned long long>(g_EntityCache.m_localplayer_ptr));
 
     auto bTest  = g_EntityCache.refresh();
 
     printf("Entity count %d\n", g_EntityCache.get_count());
 
-    printf("LocalPlayer name: %s\n", R().ReadString(g_EntityCache.m_p_localplayer_controller + 0x878).c_str());
+    printf("LocalPlayer name: %s\n", R().ReadString(g_EntityCache.m_local_controller + 0x878).c_str());
 
     g_screen_w = 2560;
     g_screen_h = 1440;

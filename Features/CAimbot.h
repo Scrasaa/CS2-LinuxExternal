@@ -10,7 +10,7 @@
 class CAimbot
 {
 public:
-    uintptr_t GetClosestToScreen(uintptr_t local_pawn);
+    uintptr_t GetClosestToScreen();
     void Run();
 };
 
