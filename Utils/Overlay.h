@@ -52,7 +52,7 @@ inline std::string utf8_encode(uint32_t cp) noexcept
 }
 
 // Shorthand — avoids magic hex literals inside the table.
-inline std::string icon(uint32_t cp) noexcept { return utf8_encode(cp); }
+inline std::string icon(const uint32_t cp) noexcept { return utf8_encode(cp); }
 
 static const std::unordered_map<std::string, std::string> weapon_icon_table =
 {

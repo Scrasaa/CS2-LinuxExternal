@@ -400,7 +400,7 @@ static bool init(int x, int y, int w, int h)
 
     const auto def_font = ImGui::GetIO().Fonts->AddFontFromFileTTF(
     "/usr/share/fonts/TTF/DejaVuSans.ttf",
-    14.0f
+    14.0f, nullptr, io.Fonts->GetGlyphRangesDefault()
     );
 
     io.FontDefault = def_font;

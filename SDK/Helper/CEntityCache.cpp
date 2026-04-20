@@ -78,7 +78,6 @@ uintptr_t CEntityCache::read_entity_at_index(uint32_t a_index) const
 }
 
 // ── Refresh ───────────────────────────────────────────────────
-
 bool CEntityCache::refresh()
 {
     if (!is_valid_ptr(m_p_entity_list))
@@ -92,8 +91,9 @@ bool CEntityCache::refresh()
     if (!is_valid_ptr(m_local_pawn))
         return false;
 
-    std::vector<uintptr_t> new_entities;
-    new_entities.reserve(64);
+    m_entities.clear();
+    m_entities.reserve(64);
+    // more efficient?
 
     for (uint32_t i = 1; i <= 64; ++i)
     {
@@ -115,16 +115,14 @@ bool CEntityCache::refresh()
         if (!is_valid_ptr(controller) || controller == m_local_controller)
             continue;
 
-        if (!is_class(controller, "CCSPlayerController"))
-            continue;
+        //if (!is_class(controller, "CCSPlayerController")) // string too expensive use hash
+        //continue;
 
-        new_entities.push_back(controller);
+        m_entities.push_back(controller);
     }
 
-    m_entities = std::move(new_entities);
-    return true;
+    return !m_entities.empty();
 }
-
 // ── Controllers ───────────────────────────────────────────────
 //
 //  Player slots 1–64 in the entity list are CCSPlayerControllers.

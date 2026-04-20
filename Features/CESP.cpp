@@ -123,7 +123,7 @@ static std::optional<ScreenBounds> compute_screen_bounds(const std::unordered_ma
     if (!any_valid)
         return std::nullopt;
 
-    constexpr float padding = 6.f;
+    static constexpr float padding = 6.f;
     return ScreenBounds{ min_x - padding, min_y - padding, max_x + padding, max_y + padding };
 }
 
@@ -369,6 +369,15 @@ void CESP::Run()
 
         if (g_config.esp.player.bDraw2DBox)
             draw_bounding_box(*bounds,  1.f);
+/*
+ * Undetected, even tho I dont like having any write operations
+        // Cache the inline struct base once — no dereference
+        const uintptr_t pGlowBase = pawn + SCHEMA_OFFSET(C_BaseModelEntity, m_Glow);
+
+        if (R().WriteMemPhysical<uint32_t>(pGlowBase + SCHEMA_OFFSET(CGlowProperty, m_glowColorOverride), 0xFF0000FF))
+            if (R().WriteMemPhysical<uint8_t>(pGlowBase + SCHEMA_OFFSET(CGlowProperty, m_bGlowing), 1))
+                ;
+*/
     }
 }
 

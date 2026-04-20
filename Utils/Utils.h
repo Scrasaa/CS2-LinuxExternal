@@ -52,6 +52,7 @@ struct phys_query
 #define IOCTL_WRITE_MEM _IOW('k', 2, struct mem_request*)
 #define IOCTL_VIRT_TO_PHYS   _IOWR('k', 3, struct phys_query*)
 #define IOCTL_READ_PHYS_MEM  _IOR('k',  4, struct mem_request*)
+#define IOCTL_WRITE_PHYS_MEM _IOW('k', 5, struct mem_request*)
 
 class CUtils
 {
@@ -190,6 +191,31 @@ public:
     {
         static_assert(std::is_trivially_copyable_v<T>, "WriteMem only supports trivially copyable types");
         return WriteRaw(addr, &value, sizeof(T));
+    }
+
+    [[nodiscard]] bool WritePhysical(uintptr_t address, const void* buffer, size_t size) const
+    {
+        if (!address || !buffer || size == 0)
+            return false;
+
+        std::vector<uint8_t> staging(size);
+        std::memcpy(staging.data(), buffer, size);
+
+        mem_request req{};
+        req.pid    = m_pid;
+        req.addr   = static_cast<unsigned long>(address);
+        req.size   = size;
+        req.buffer = staging.data();
+
+        return ioctl(m_fd, IOCTL_WRITE_PHYS_MEM, &req) >= 0;
+    }
+
+    template <typename T>
+    [[nodiscard]] bool WriteMemPhysical(uintptr_t addr, const T& value) const
+    {
+        static_assert(std::is_trivially_copyable_v<T>,
+                      "WriteMemPhysical only supports trivially copyable types");
+        return WritePhysical(addr, &value, sizeof(T));
     }
 
     // ---------- Array helpers ----------
