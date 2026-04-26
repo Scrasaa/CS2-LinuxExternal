@@ -26,10 +26,13 @@
 #include "CSchemaManager.h"
 #include "Utils/Utils.h"
 
+#define MAX_ENTITY 1024
+
 CEntityCache::CEntityCache(uintptr_t a_p_entity_list)
     : m_p_entity_list(a_p_entity_list)
 {
-    m_entities.reserve(64);
+    m_players.reserve(64);
+    m_weapons.reserve(64);
 }
 
 uintptr_t CEntityCache::read_list_head() const
@@ -78,6 +81,19 @@ uintptr_t CEntityCache::read_entity_at_index(uint32_t a_index) const
 }
 
 // ── Refresh ───────────────────────────────────────────────────
+// ── CEntityCache::refresh ─────────────────────────────────────
+//
+//  Optimised for large entity ranges (up to MAX_ENTITY = 1024).
+//
+//  Old approach : N × (chunk_ptr + handle + instance + is_class)
+//                 = ~7 000 RPM calls at 1024 slots
+//
+//  New approach : ceil(N/512) bulk chunk reads parsed locally,
+//                 is_class only on valid candidates
+//                 = ~2 RPM calls + 1 per live entity
+//
+// ─────────────────────────────────────────────────────────────
+
 bool CEntityCache::refresh()
 {
     if (!is_valid_ptr(m_p_entity_list))
@@ -87,42 +103,104 @@ bool CEntityCache::refresh()
     if (!is_valid_ptr(m_local_controller))
         return false;
 
-    m_local_pawn = resolve_entity_from_handle(R().ReadMem<uintptr_t>(m_local_controller + SCHEMA_OFFSET(CBasePlayerController, m_hPawn)));
+    m_local_pawn = resolve_entity_from_handle(
+        R().ReadMem<uint32_t>(
+            m_local_controller + SCHEMA_OFFSET(CBasePlayerController, m_hPawn)));
     if (!is_valid_ptr(m_local_pawn))
         return false;
 
-    m_entities.clear();
-    m_entities.reserve(64);
-    // more efficient?
+    m_players.clear();
+    m_weapons.clear();
 
-    for (uint32_t i = 1; i <= 64; ++i)
+    // ── 1. Read all bucket (chunk) pointers in one shot ──────
+    //
+    //  1024 slots → 2 buckets (each covers 512 identities).
+    //  Read the entire pointer array at once instead of one ptr per loop.
+
+    constexpr uint32_t k_max_entities  = MAX_ENTITY;
+    constexpr uint32_t k_slots_per_chunk = 512u;
+    constexpr uint32_t k_num_chunks =
+        (k_max_entities + k_slots_per_chunk - 1u) / k_slots_per_chunk;
+
+    uintptr_t l_chunk_ptrs[k_num_chunks] = {};
+    if (!R().ReadRaw(m_p_entity_list,
+                        l_chunk_ptrs,
+                        sizeof(uintptr_t) * k_num_chunks))
+        return false;
+
+    // ── 2. Per-chunk: read the entire identity array locally ──
+    //
+    //  k_entity_identity_size × 512 bytes per chunk.
+    //  Parsing handle + instance is now just a memcpy — zero RPM.
+
+    constexpr size_t k_chunk_bytes = k_entity_identity_size * k_slots_per_chunk;
+
+    // Reuse one stack buffer per chunk to avoid heap alloc in the hot path.
+    // Stack is fine: ~60 KB for typical k_entity_identity_size of 0x78.
+    // If your identity struct is larger, promote to a member buffer.
+    alignas(8) uint8_t l_chunk_buf[k_chunk_bytes];
+
+    for (uint32_t l_chunk_idx = 0; l_chunk_idx < k_num_chunks; ++l_chunk_idx)
     {
-        const uint32_t bucket       = i >> 9;
-        const uint32_t index        = i & 0x1FF;
-
-        const auto chunk = R().ReadMem<uintptr_t>(
-            m_p_entity_list + sizeof(uintptr_t) * bucket);
-        if (!is_valid_ptr(chunk))
+        const uintptr_t lp_chunk = l_chunk_ptrs[l_chunk_idx];
+        if (!is_valid_ptr(lp_chunk))
             continue;
 
-        const uintptr_t identity = chunk + k_entity_identity_size * index;
-
-        const auto handle = R().ReadMem<uint32_t>(identity + k_identity_handle);
-        if ((handle & 0x7FFF) != i)
+        // Single bulk RPM for the whole chunk
+        if (!R().ReadRaw(lp_chunk, l_chunk_buf, k_chunk_bytes))
             continue;
 
-        const auto controller = R().ReadMem<uintptr_t>(identity);
-        if (!is_valid_ptr(controller) || controller == m_local_controller)
-            continue;
+        const uint32_t l_base_index = l_chunk_idx * k_slots_per_chunk;
 
-        //if (!is_class(controller, "CCSPlayerController")) // string too expensive use hash
-        //continue;
+        for (uint32_t l_slot = 0; l_slot < k_slots_per_chunk; ++l_slot)
+        {
+            const uint32_t l_entity_index = l_base_index + l_slot;
 
-        m_entities.push_back(controller);
+            // Skip slot 0 (world), cap at max
+            if (l_entity_index == 0 || l_entity_index > k_max_entities)
+                continue;
+
+            const uint8_t* lp_identity =
+                l_chunk_buf + k_entity_identity_size * l_slot;
+
+            // ── Parse from local buffer — no RPM ─────────────
+            uint32_t l_handle = 0;
+            std::memcpy(&l_handle, lp_identity + k_identity_handle, sizeof(l_handle));
+
+            if ((l_handle & 0x7FFF) != l_entity_index)
+                continue;   // slot is free or serial mismatch
+
+            uintptr_t lp_instance = 0;
+            std::memcpy(&lp_instance, lp_identity, sizeof(lp_instance));
+
+            if (!is_valid_ptr(lp_instance) || lp_instance == m_local_controller)
+                continue;
+
+            // ── is_class only on candidates that survived ─────
+            //
+            //  Slots 1–64  → player controllers
+            //  Slots 65+   → weapons / projectiles / etc.
+            //
+            //  Tip: if you trust CS2's layout you can skip is_class
+            //  for slots 1–64 entirely and save ~4 RPM each.
+
+            if (l_entity_index <= 64)
+            {
+                m_players.push_back(lp_instance);
+            }
+            else
+            {
+                if (is_class(lp_instance, "CWeaponBase") ||
+                    is_class(lp_instance, "CC4"))
+                    m_weapons.push_back(lp_instance);
+                // extend for chickens, nades, etc.
+            }
+        }
     }
 
-    return !m_entities.empty();
+    return !m_players.empty();
 }
+
 // ── Controllers ───────────────────────────────────────────────
 //
 //  Player slots 1–64 in the entity list are CCSPlayerControllers.
@@ -131,7 +209,7 @@ bool CEntityCache::refresh()
 
 const std::vector<uintptr_t>& CEntityCache::get_controllers() const
 {
-    return m_entities;
+    return m_players;
 }
 
 // ── Pawns ─────────────────────────────────────────────────────
@@ -142,9 +220,9 @@ const std::vector<uintptr_t>& CEntityCache::get_controllers() const
 std::vector<uintptr_t> CEntityCache::get_pawns() const
 {
     std::vector<uintptr_t> l_pawns;
-    l_pawns.reserve(m_entities.size());
+    l_pawns.reserve(m_players.size());
 
-    for (const uintptr_t lp_controller : m_entities)
+    for (const uintptr_t lp_controller : m_players)
     {
         const auto  l_pawn_handle = R().ReadMem<uint32_t>(
             lp_controller + SCHEMA_OFFSET(CBasePlayerController, m_hPawn));
@@ -162,12 +240,12 @@ std::vector<uintptr_t> CEntityCache::get_pawns() const
 //  Convenience: returns paired {controller, pawn} for every slot
 //  where both pointers resolved successfully.
 
-std::vector<CEntityCache::EntityPair> CEntityCache::get_entity_pairs() const
+std::vector<CEntityCache::EntityPair> CEntityCache::get_player_pairs() const
 {
     std::vector<EntityPair> l_pairs;
-    l_pairs.reserve(m_entities.size());
+    l_pairs.reserve(m_players.size());
 
-    for (const uintptr_t lp_controller : m_entities)
+    for (const uintptr_t lp_controller : m_players)
     {
         const auto  l_pawn_handle = R().ReadMem<uint32_t>(
             lp_controller + SCHEMA_OFFSET(CBasePlayerController, m_hPawn));
@@ -182,14 +260,19 @@ std::vector<CEntityCache::EntityPair> CEntityCache::get_entity_pairs() const
 
 // ── Misc ──────────────────────────────────────────────────────
 
-const std::vector<uintptr_t>& CEntityCache::get_entities() const
+const std::vector<uintptr_t>& CEntityCache::get_players() const
 {
-    return m_entities;
+    return m_players;
 }
 
-int32_t CEntityCache::get_count() const
+int32_t CEntityCache::get_player_count() const
 {
-    return static_cast<int32_t>(m_entities.size());
+    return static_cast<int32_t>(m_players.size());
+}
+
+const std::vector<uintptr_t> & CEntityCache::get_weapons() const
+{
+    return m_weapons;
 }
 
 // ── Iterate ───────────────────────────────────────────────────
@@ -297,4 +380,24 @@ uintptr_t CEntityCache::get_controller_at_index(uint32_t a_index) const
         return 0;
 
     return lp_controller;
+}
+
+uintptr_t CEntityCache::resolve_weapon_from_handle(uint32_t handle) const
+{
+    if (!handle)
+        return 0;
+
+    const uint32_t index  = handle & 0xFFF;    // 12-bit index for weapon handles
+    const uint32_t bucket = index >> 9;
+    const uint32_t offset = index & 0x1FF;
+
+    const auto chunk = R().ReadMem<uintptr_t>(
+        m_p_entity_list + sizeof(uintptr_t) * bucket);
+    if (!is_valid_ptr(chunk))
+        return 0;
+
+    const auto entity = R().ReadMem<uintptr_t>(
+        chunk + k_entity_identity_size * offset);
+
+    return is_valid_ptr(entity) ? entity : 0;
 }

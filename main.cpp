@@ -177,7 +177,7 @@ int main()
 
     auto bTest  = g_EntityCache.refresh();
 
-    printf("Entity count %d\n", g_EntityCache.get_count());
+    printf("Entity count %d\n", g_EntityCache.get_player_count());
 
     printf("LocalPlayer name: %s\n", R().ReadString(g_EntityCache.m_local_controller + 0x878).c_str());
 

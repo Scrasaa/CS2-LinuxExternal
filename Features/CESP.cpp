@@ -15,6 +15,7 @@
 #include "Utils/Overlay.h"
 #include "Utils/BVH/map_manager.h"
 #include "../Thirdparty/ImGUI/imgui.h"
+#include "SDK/WeaponType.h"
 
 inline constexpr std::array<std::pair<Bones, Bones>, 18> BoneConnections
 {{
@@ -266,9 +267,17 @@ void CESP::Run()
     if (!g_config.esp.player.bEnable)
         return;
 
+    //printf("count %lu\n", g_EntityCache.m_weapons.size());
+
+    for (const auto& weapon_ptr : g_EntityCache.get_weapons())
+    {
+        auto idk =  R().ReadMem<const char*>(weapon_ptr +0x28);
+        printf("wwfo %s\n", idk);
+    }
+
     auto local_team = R().ReadMem<int32_t>(g_EntityCache.m_local_pawn + SCHEMA_OFFSET(C_BaseEntity, m_iTeamNum));
 
-    for (const auto& [controller, pawn] : g_EntityCache.get_entity_pairs())
+    for (const auto& [controller, pawn] : g_EntityCache.get_player_pairs())
     {
         if (!is_valid_ptr(pawn))
             continue;
@@ -309,26 +318,29 @@ void CESP::Run()
         if (g_config.esp.player.bSkeleton)
             DrawSkeleton(bone_map);
 
+        // PLayer INfo Shyt
+
         PlayerInfo player_info{};
         player_info.szName      = R().ReadString(controller + SCHEMA_OFFSET(CBasePlayerController, m_iszPlayerName));
         player_info.iHealth     = R().ReadMem<int32_t>(pawn + SCHEMA_OFFSET(C_BaseEntity, m_iHealth));
         player_info.iMaxHealth  = R().ReadMem<int32_t>(pawn + SCHEMA_OFFSET(C_BaseEntity, m_iMaxHealth));
         player_info.iArmor      = R().ReadMem<int32_t>(pawn + SCHEMA_OFFSET(C_CSPlayerPawn, m_ArmorValue));
 
-        const auto weapon_entity = R().ReadMem<uintptr_t>(pawn + SCHEMA_OFFSET(C_CSPlayerPawn, m_pClippingWeapon));
-        if (is_valid_ptr(weapon_entity))
+
+        const auto weapon_services = R().ReadMem<uintptr_t>(pawn + SCHEMA_OFFSET(C_BasePlayerPawn, m_pWeaponServices));
+        const auto weapon_handle = R().ReadMem<uintptr_t>(weapon_services + SCHEMA_OFFSET(CPlayer_WeaponServices, m_hActiveWeapon));
+        const auto index = reinterpret_cast<uint64_t>(weapon_handle) & 0xFFF;
+
+        if (const auto weapon_ent = g_EntityCache.read_entity_at_index(index); is_valid_ptr(weapon_ent))
         {
-            const auto weapon_identity = R().ReadMem<uintptr_t>(weapon_entity + 0x10);
-            if (is_valid_ptr(weapon_identity))
-            {
-                const auto weapon_name_ptr = R().ReadMem<uintptr_t>(weapon_identity + 0x20);
-                if (is_valid_str_ptr(weapon_name_ptr))
-                {
-                    player_info.szActiveWeaponName = R().ReadString(weapon_name_ptr);
-                    if (player_info.szActiveWeaponName.size() > 7)
-                        player_info.szActiveWeaponName.erase(0, 7);
-                }
-            }
+            player_info.iReserveAmmo = R().ReadMem<uintptr_t>(weapon_ent + SCHEMA_OFFSET(C_BasePlayerWeapon, m_pReserveAmmo));
+            player_info.iClipPrimary = R().ReadMem<uintptr_t>(weapon_ent + SCHEMA_OFFSET(C_BasePlayerWeapon, m_iClip1));
+
+            const auto wep_def = R().ReadMem<uint16_t>(weapon_ent + SCHEMA_OFFSET(C_EconEntity, m_AttributeManager) +
+                SCHEMA_OFFSET(C_AttributeContainer, m_Item) + SCHEMA_OFFSET(C_EconItemView, m_iItemDefinitionIndex));
+
+            const auto weapon_type = weapon_type_from_index(wep_def);
+            player_info.szActiveWeaponName = weapon_display_name(weapon_type);
         }
 
         player_info.flags = 0;

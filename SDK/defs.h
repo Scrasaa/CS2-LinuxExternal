@@ -37,8 +37,6 @@ static constexpr uint32_t k_node_data             = 0x10;
 static constexpr uint32_t k_blob_next             = 0x00;
 static constexpr uint32_t k_blob_data             = 0x10;
 
-
-
 // ── CSchemaSystem ────────────────────────────────────────────────────────────
 static constexpr uint32_t k_system_scope_vec      = 0x1F8; // CUtlVector<CSchemaSystemTypeScope*>
 
@@ -87,5 +85,40 @@ static constexpr uint32_t k_base_class_ptr        = 0x08; // SchemaClassInfoData
 static constexpr uint32_t k_binding_class_ptr   = 0x20;
 
 static constexpr uint32_t k_base_stride           = 0x10;
+
+// ── Confirmed layout ─────────────────────────────────────────
+//   entity_list              = resolved via pattern scan in libclient.so
+//                              "48 8D 05 ? ? ? ? 48 8B 00 48 83 C0"
+//                              GetAbsoluteAddress(hit, 3, 7)
+//
+//   entity_list + 0x200      = CEntityIdentity*  linked list head
+//   CEntityIdentity + 0x00   = vtable ptr
+//   CEntityIdentity + 0x10   = CEntityHandle     (u32)
+//   CEntityIdentity + 0x58   = CEntityIdentity*  pNext
+//   CEntityIdentity + 0x10   = schema binding ptr
+//   schema_binding  + 0x20   = const char*        class name
+// ─────────────────────────────────────────────────────────────
+static constexpr uintptr_t  k_entity_list_head_offset  = 0x200; // CEntityIdentity* head of alive linked list
+static constexpr uintptr_t  k_identity_handle          = 0x10;  // CEntityHandle (u32)
+static constexpr uintptr_t  k_identity_next            = 0x58;  // CEntityIdentity* pNext
+static constexpr uintptr_t  k_identity_classname_ptr   = 0x10;  // schema binding ptr on CEntityIdentity
+static constexpr uintptr_t  k_classname_ptr_name       = 0x20;  // const char* inside schema binding
+static constexpr uintptr_t  k_entity_identity_size     = 0x70;  // sizeof(CEntityIdentity)
+
+/*      CEntityIdentity
+
+        constexpr std::ptrdiff_t m_nameStringTableIndex = 0x14; // int32
+        constexpr std::ptrdiff_t m_name = 0x18; // CUtlSymbolLarge
+        constexpr std::ptrdiff_t m_designerName = 0x20; // CUtlSymbolLarge
+        constexpr std::ptrdiff_t m_flags = 0x30; // uint32
+        constexpr std::ptrdiff_t m_worldGroupId = 0x38; // WorldGroupId_t
+        constexpr std::ptrdiff_t m_fDataObjectTypes = 0x3C; // uint32
+        constexpr std::ptrdiff_t m_PathIndex = 0x40; // ChangeAccessorFieldPathIndex_t
+        constexpr std::ptrdiff_t m_pAttributes = 0x48; // CEntityAttributeTable*
+        constexpr std::ptrdiff_t m_pPrev = 0x50; // CEntityIdentity*
+        constexpr std::ptrdiff_t m_pNext = 0x58; // CEntityIdentity*
+        constexpr std::ptrdiff_t m_pPrevByClass = 0x60; // CEntityIdentity*
+        constexpr std::ptrdiff_t m_pNextByClass = 0x68; // CEntityIdentity*
+*/
 
 #endif //CS2_LINUXEXTERNAL_DEFS_H

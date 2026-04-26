@@ -65,6 +65,7 @@ add_executable(CS2_LinuxExternal
         SDK/Helper/ConVar.cpp
         Features/CVisuals.cpp
         Features/CVisuals.h
+        SDK/WeaponType.h
 )
 
 # ── Include dirs ──────────────────────────────────────────────────────────────
