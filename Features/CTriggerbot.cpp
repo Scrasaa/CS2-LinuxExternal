@@ -13,7 +13,7 @@ int RandomReactionTime()
 {
     static std::random_device rd;
     static std::mt19937 gen(rd());
-    static std::uniform_int_distribution<int> dist(g_config.triggerbot.iMinReaction, g_config.triggerbot.iMaxReaction);
+    std::uniform_int_distribution<int> dist(g_config.triggerbot.iMinReaction, g_config.triggerbot.iMaxReaction);
 
     return dist(gen);
 }
@@ -48,7 +48,6 @@ void CTriggerbot::Run()
         return;
     }
 
-    // First frame we see a valid target — stamp it
     if (!m_acquire_time.has_value())
     {
         m_acquire_time = std::chrono::steady_clock::now();

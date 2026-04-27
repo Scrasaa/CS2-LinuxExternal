@@ -326,23 +326,22 @@ void CESP::Run()
         player_info.iMaxHealth  = R().ReadMem<int32_t>(pawn + SCHEMA_OFFSET(C_BaseEntity, m_iMaxHealth));
         player_info.iArmor      = R().ReadMem<int32_t>(pawn + SCHEMA_OFFSET(C_CSPlayerPawn, m_ArmorValue));
 
-
+/*
         const auto weapon_services = R().ReadMem<uintptr_t>(pawn + SCHEMA_OFFSET(C_BasePlayerPawn, m_pWeaponServices));
         const auto weapon_handle = R().ReadMem<uintptr_t>(weapon_services + SCHEMA_OFFSET(CPlayer_WeaponServices, m_hActiveWeapon));
         const auto index = reinterpret_cast<uint64_t>(weapon_handle) & 0xFFF;
 
-        if (const auto weapon_ent = g_EntityCache.read_entity_at_index(index); is_valid_ptr(weapon_ent))
-        {
-            player_info.iReserveAmmo = R().ReadMem<uintptr_t>(weapon_ent + SCHEMA_OFFSET(C_BasePlayerWeapon, m_pReserveAmmo));
-            player_info.iClipPrimary = R().ReadMem<uintptr_t>(weapon_ent + SCHEMA_OFFSET(C_BasePlayerWeapon, m_iClip1));
+        const auto weapon_ent = g_EntityCache.resolve_entity_from_handle(index);
 
-            const auto wep_def = R().ReadMem<uint16_t>(weapon_ent + SCHEMA_OFFSET(C_EconEntity, m_AttributeManager) +
-                SCHEMA_OFFSET(C_AttributeContainer, m_Item) + SCHEMA_OFFSET(C_EconItemView, m_iItemDefinitionIndex));
+        player_info.iReserveAmmo = R().ReadMem<uintptr_t>(weapon_ent + SCHEMA_OFFSET(C_BasePlayerWeapon, m_pReserveAmmo));
+        player_info.iClipPrimary = R().ReadMem<uintptr_t>(weapon_ent + SCHEMA_OFFSET(C_BasePlayerWeapon, m_iClip1));
 
-            const auto weapon_type = weapon_type_from_index(wep_def);
-            player_info.szActiveWeaponName = weapon_display_name(weapon_type);
-        }
+        const auto wep_def = R().ReadMem<uint16_t>(weapon_ent + SCHEMA_OFFSET(C_EconEntity, m_AttributeManager) +
+            SCHEMA_OFFSET(C_AttributeContainer, m_Item) + SCHEMA_OFFSET(C_EconItemView, m_iItemDefinitionIndex));
 
+        const auto weapon_type = weapon_type_from_index(wep_def);
+        player_info.szActiveWeaponName = weapon_display_name(weapon_type);
+*/
         player_info.flags = 0;
 
         if (R().ReadMem<int8_t>(pawn + SCHEMA_OFFSET(C_CSPlayerPawn, m_bIsScoped)))
