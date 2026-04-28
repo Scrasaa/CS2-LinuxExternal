@@ -15,7 +15,10 @@
 #include "Utils/Overlay.h"
 #include "Utils/BVH/map_manager.h"
 #include "../Thirdparty/ImGUI/imgui.h"
+#include "SDK/player_info.h"
 #include "SDK/WeaponType.h"
+
+// ── Bone data ─────────────────────────────────────────────────
 
 inline constexpr std::array<std::pair<Bones, Bones>, 18> BoneConnections
 {{
@@ -53,10 +56,12 @@ inline constexpr std::array<Bones, 19> k_needed_bones =
 struct Bone
 {
     Utils::Math::Vector position;
-    std::byte padding[20];
+    std::byte           padding[20];
 };
 
-Utils::Math::Vector bone_position(const uintptr_t game_scene_node, const uint64_t bone_index)
+// ── Bone reads ────────────────────────────────────────────────
+
+Utils::Math::Vector bone_position(uintptr_t game_scene_node, uint64_t bone_index)
 {
     const auto bone_data = R().ReadMem<uintptr_t>(
         game_scene_node
@@ -73,7 +78,7 @@ Utils::Math::Vector bone_position(const uintptr_t game_scene_node, const uint64_
     return bone_struct.position;
 }
 
-static std::unordered_map<Bones, Utils::Math::Vector> all_bones(const uintptr_t game_scene_node)
+static std::unordered_map<Bones, Utils::Math::Vector> all_bones(uintptr_t game_scene_node)
 {
     std::unordered_map<Bones, Utils::Math::Vector> bones;
 
@@ -97,11 +102,14 @@ static std::unordered_map<Bones, Utils::Math::Vector> all_bones(const uintptr_t 
     return bones;
 }
 
-static std::optional<ScreenBounds> compute_screen_bounds(const std::unordered_map<Bones, Utils::Math::Vector>& bone_map)
+// ── Screen projection ─────────────────────────────────────────
+
+static std::optional<ScreenBounds> compute_screen_bounds(
+    const std::unordered_map<Bones, Utils::Math::Vector>& bone_map)
 {
     float min_x =  FLT_MAX, min_y =  FLT_MAX;
     float max_x = -FLT_MAX, max_y = -FLT_MAX;
-    bool any_valid = false;
+    bool  any_valid = false;
 
     for (const Bones bone : k_needed_bones)
     {
@@ -124,9 +132,11 @@ static std::optional<ScreenBounds> compute_screen_bounds(const std::unordered_ma
     if (!any_valid)
         return std::nullopt;
 
-    static constexpr float padding = 6.f;
-    return ScreenBounds{ min_x - padding, min_y - padding, max_x + padding, max_y + padding };
+    static constexpr float k_padding = 6.f;
+    return ScreenBounds{ min_x - k_padding, min_y - k_padding, max_x + k_padding, max_y + k_padding };
 }
+
+// ── Draw primitives ───────────────────────────────────────────
 
 static void draw_bounding_box(const ScreenBounds& bounds, float thickness)
 {
@@ -151,7 +161,8 @@ static void draw_name_label(const ScreenBounds& bounds, const std::string& name,
 
 static void draw_health_bar(const ScreenBounds& bounds, int32_t health, int32_t max_health)
 {
-    const float frac = std::clamp(static_cast<float>(health) / static_cast<float>(max_health), 0.f, 1.f);
+    const float frac = std::clamp(
+        static_cast<float>(health) / static_cast<float>(max_health), 0.f, 1.f);
 
     constexpr float bar_width = 4.f;
     constexpr float bar_gap   = 8.f;
@@ -200,12 +211,12 @@ static void draw_weapon_label(const ScreenBounds& bounds, const std::string& wea
     Overlay::draw_list->AddText(ImVec2(x,        y),       IM_COL32(255, 255, 255, 255), weapon_name.c_str());
 }
 
-static void draw_weapon_icon(const ScreenBounds& bounds, const std::string& weapon_name)
+static void draw_weapon_icon(const ScreenBounds& bounds, const int32_t wep_def)
 {
-    const ImVec2 size = ImGui::CalcTextSize(weapon_name.c_str());
-    const float  x    = bounds.min_x + ((bounds.max_x - bounds.min_x) - size.x) * 0.5f;
-    const float  y    = bounds.max_y;
-    const std::string& icon_str = get_weapon_icon(weapon_name);
+    const std::string& icon_str = get_weapon_icon(wep_def);
+    const ImVec2       size     = ImGui::CalcTextSize(icon_str.c_str());
+    const float        x        = bounds.min_x + ((bounds.max_x - bounds.min_x) - size.x) * 0.5f;
+    const float        y        = bounds.max_y;
 
     Overlay::draw_list->AddText(
         Overlay::weapon_font,
@@ -217,182 +228,150 @@ static void draw_weapon_icon(const ScreenBounds& bounds, const std::string& weap
 
 static void draw_status_flags(const ScreenBounds& bounds, const PlayerInfo& player_info)
 {
-    constexpr float gap = 2.f;
+    constexpr float k_gap = 2.f;
 
-    const float flag_x = bounds.max_x + gap;
+    const float flag_x = bounds.max_x + k_gap;
     float       flag_y = bounds.min_y;
 
     const auto draw_flag = [&](const char* label, ImU32 color)
     {
-        constexpr ImU32 shadow = IM_COL32(0, 0, 0, 255);
+        constexpr ImU32 k_shadow = IM_COL32(0, 0, 0, 255);
 
         ImGui::PushFont(Overlay::small_font);
         const ImVec2 size = ImGui::CalcTextSize(label);
 
-        Overlay::draw_list->AddText(ImVec2(flag_x - 1.f, flag_y),        shadow, label);
-        Overlay::draw_list->AddText(ImVec2(flag_x + 1.f, flag_y),        shadow, label);
-        Overlay::draw_list->AddText(ImVec2(flag_x,        flag_y - 1.f), shadow, label);
-        Overlay::draw_list->AddText(ImVec2(flag_x,        flag_y + 1.f), shadow, label);
-        Overlay::draw_list->AddText(ImVec2(flag_x,        flag_y),       color,  label);
+        Overlay::draw_list->AddText(ImVec2(flag_x - 1.f, flag_y),        k_shadow, label);
+        Overlay::draw_list->AddText(ImVec2(flag_x + 1.f, flag_y),        k_shadow, label);
+        Overlay::draw_list->AddText(ImVec2(flag_x,        flag_y - 1.f), k_shadow, label);
+        Overlay::draw_list->AddText(ImVec2(flag_x,        flag_y + 1.f), k_shadow, label);
+        Overlay::draw_list->AddText(ImVec2(flag_x,        flag_y),       color,    label);
 
         ImGui::PopFont();
-        flag_y += size.y + gap;
+        flag_y += size.y + k_gap;
     };
 
     const unsigned int show = g_config.esp.player.uShowFlags;
 
     if (player_info.iArmor > 0 && (show & FLAG_HAS_HELMET))
     {
-        if (player_info.HasFlag(FLAG_HAS_HELMET))
-            draw_flag("HK", IM_COL32(100, 200, 255, 255));
-        else
-            draw_flag("K",  IM_COL32(150, 220, 255, 255));
+        player_info.HasFlag(FLAG_HAS_HELMET)
+            ? draw_flag("HK", IM_COL32(100, 200, 255, 255))
+            : draw_flag("K",  IM_COL32(150, 220, 255, 255));
     }
 
     if ((show & FLAG_SCOPED)      && player_info.HasFlag(FLAG_SCOPED))
-        draw_flag("*SCOPED*",    IM_COL32(255, 220,  80, 255));
+        draw_flag("*SCOPED*",   IM_COL32(255, 220,  80, 255));
 
     if ((show & FLAG_HAS_DEFUSER) && player_info.HasFlag(FLAG_HAS_DEFUSER))
-        draw_flag("KIT",         IM_COL32( 80, 220, 255, 255));
+        draw_flag("KIT",        IM_COL32( 80, 220, 255, 255));
 
     if ((show & FLAG_DEFUSING)    && player_info.HasFlag(FLAG_DEFUSING))
-        draw_flag("*DEFUSING*",  IM_COL32(255,  80,  80, 255));
+        draw_flag("*DEFUSING*", IM_COL32(255,  80,  80, 255));
 
     if ((show & FLAG_FLASHED)     && player_info.HasFlag(FLAG_FLASHED))
-        draw_flag("*FLASHED*",   IM_COL32(255, 255,   0, 255));
+        draw_flag("*FLASHED*",  IM_COL32(255, 255,   0, 255));
 }
+
+static void draw_snapline(const ScreenBounds& bounds, bool b_from_crosshair)
+{
+    const ImVec2 target
+    {
+        bounds.min_x + (bounds.max_x - bounds.min_x) * 0.5f,
+        bounds.max_y // feet
+    };
+
+    const ImVec2 origin = b_from_crosshair
+        ? ImVec2{ g_screen_w * 0.5f, g_screen_h * 0.5f }
+    : ImVec2{ g_screen_w * 0.5f, static_cast<float>(g_screen_h) };
+
+    // Outline pass first, fill pass on top
+    Overlay::draw_list->AddLine(origin, target, IM_COL32(0, 0, 0, 160), 2.5f);
+    Overlay::draw_list->AddLine(origin, target, IM_COL32_WHITE,  1.0f);
+}
+
+// ── CESP::Run ─────────────────────────────────────────────────
+//
+//  All game-state data is pre-populated in g_EntityCache.refresh().
+//  This function is render-only: bone reads + ImGui draw calls.
+//  No RPM calls for player state occur here.
 
 void CESP::Run()
 {
     if (!g_config.esp.player.bEnable)
         return;
 
-    //printf("count %lu\n", g_EntityCache.m_weapons.size());
-
-    for (const auto& weapon_ptr : g_EntityCache.get_weapons())
+    // Resolve local head once if visibility culling is active.
+    // Avoid the redundant scene-node read inside the player loop.
+    Utils::Math::Vector local_head{};
+    if (g_config.esp.player.bVisible)
     {
-        auto idk =  R().ReadMem<const char*>(weapon_ptr +0x28);
-        printf("wwfo %s\n", idk);
+        const auto local_scene = R().ReadMem<uintptr_t>(
+            g_EntityCache.m_local_pawn + SCHEMA_OFFSET(C_BaseEntity, m_pGameSceneNode));
+
+        if (is_valid_ptr(local_scene))
+            local_head = bone_position(local_scene, static_cast<uint64_t>(Bones::Head));
     }
 
-    auto local_team = R().ReadMem<int32_t>(g_EntityCache.m_local_pawn + SCHEMA_OFFSET(C_BaseEntity, m_iTeamNum));
-
-    for (const auto& [controller, pawn] : g_EntityCache.get_player_pairs())
+    for (const auto& cached : g_EntityCache.get_cached_players())
     {
-        if (!is_valid_ptr(pawn))
+        // Team filter — uses m_local_team cached by refresh(), zero RPM
+        if (!g_is_ffa && !g_config.esp.player.bTeam && cached.info.iTeamNum == g_EntityCache.m_local_team)
             continue;
 
-        if (R().ReadMem<uint8_t>(pawn + SCHEMA_OFFSET(C_BaseEntity, m_lifeState)) != 0)
-            continue;
-
-        const auto pawn_team = R().ReadMem<int32_t>(pawn + SCHEMA_OFFSET(C_BaseEntity, m_iTeamNum));
-
-        if (!g_is_ffa && !g_config.esp.player.bTeam && pawn_team == local_team)
-            continue;
-
-        const auto game_scene_node = R().ReadMem<uintptr_t>(pawn + SCHEMA_OFFSET(C_BaseEntity, m_pGameSceneNode));
-        if (!is_valid_ptr(game_scene_node))
-            continue;
-
-        if (R().ReadMem<bool>(game_scene_node + SCHEMA_OFFSET(CGameSceneNode, m_bDormant)))
-            continue;
-
-        const auto bone_map = all_bones(game_scene_node);
+        // Bone map — one bulk RPM call per visible player
+        const auto bone_map = all_bones(cached.p_game_scene);
         if (bone_map.empty())
             continue;
 
-        const auto it_head = bone_map.find(Bones::Head);
-        if (it_head == bone_map.end())
-            continue;
-
+        // Visibility cull
         if (g_config.esp.player.bVisible)
         {
-            const auto local_scene_node = R().ReadMem<uintptr_t>(g_EntityCache.m_local_pawn + SCHEMA_OFFSET(C_BaseEntity, m_pGameSceneNode));
-            const auto local_head       = bone_position(local_scene_node, static_cast<uint64_t>(Bones::Head));
-            const auto& head            = it_head->second;
+            const auto it_head = bone_map.find(Bones::Head);
+            if (it_head == bone_map.end())
+                continue;
 
-            if (!g_MapManager.is_visible({ local_head.x, local_head.y, local_head.z }, { head.x, head.y, head.z }))
+            const auto& head = it_head->second;
+            if (!g_MapManager.is_visible(
+                    { local_head.x, local_head.y, local_head.z },
+                    { head.x,       head.y,       head.z       }))
                 continue;
         }
 
         if (g_config.esp.player.bSkeleton)
             DrawSkeleton(bone_map);
 
-        // PLayer INfo Shyt
-
-        PlayerInfo player_info{};
-        player_info.szName      = R().ReadString(controller + SCHEMA_OFFSET(CBasePlayerController, m_iszPlayerName));
-        player_info.iHealth     = R().ReadMem<int32_t>(pawn + SCHEMA_OFFSET(C_BaseEntity, m_iHealth));
-        player_info.iMaxHealth  = R().ReadMem<int32_t>(pawn + SCHEMA_OFFSET(C_BaseEntity, m_iMaxHealth));
-        player_info.iArmor      = R().ReadMem<int32_t>(pawn + SCHEMA_OFFSET(C_CSPlayerPawn, m_ArmorValue));
-
-/*
-        const auto weapon_services = R().ReadMem<uintptr_t>(pawn + SCHEMA_OFFSET(C_BasePlayerPawn, m_pWeaponServices));
-        const auto weapon_handle = R().ReadMem<uintptr_t>(weapon_services + SCHEMA_OFFSET(CPlayer_WeaponServices, m_hActiveWeapon));
-        const auto index = reinterpret_cast<uint64_t>(weapon_handle) & 0xFFF;
-
-        const auto weapon_ent = g_EntityCache.resolve_entity_from_handle(index);
-
-        player_info.iReserveAmmo = R().ReadMem<uintptr_t>(weapon_ent + SCHEMA_OFFSET(C_BasePlayerWeapon, m_pReserveAmmo));
-        player_info.iClipPrimary = R().ReadMem<uintptr_t>(weapon_ent + SCHEMA_OFFSET(C_BasePlayerWeapon, m_iClip1));
-
-        const auto wep_def = R().ReadMem<uint16_t>(weapon_ent + SCHEMA_OFFSET(C_EconEntity, m_AttributeManager) +
-            SCHEMA_OFFSET(C_AttributeContainer, m_Item) + SCHEMA_OFFSET(C_EconItemView, m_iItemDefinitionIndex));
-
-        const auto weapon_type = weapon_type_from_index(wep_def);
-        player_info.szActiveWeaponName = weapon_display_name(weapon_type);
-*/
-        player_info.flags = 0;
-
-        if (R().ReadMem<int8_t>(pawn + SCHEMA_OFFSET(C_CSPlayerPawn, m_bIsScoped)))
-            player_info.SetFlag(FLAG_SCOPED);
-
-        if (R().ReadMem<int8_t>(pawn + SCHEMA_OFFSET(C_CSPlayerPawn, m_bIsDefusing)))
-            player_info.SetFlag(FLAG_DEFUSING);
-
-        if (R().ReadMem<float>(pawn + SCHEMA_OFFSET(C_CSPlayerPawnBase, m_flFlashDuration)) > 0.1f)
-            player_info.SetFlag(FLAG_FLASHED);
-
-        const auto item_services = R().ReadMem<uintptr_t>(pawn + SCHEMA_OFFSET(C_BasePlayerPawn, m_pItemServices));
-        if (is_valid_ptr(item_services))
-        {
-            if (R().ReadMem<int8_t>(item_services + SCHEMA_OFFSET(CCSPlayer_ItemServices, m_bHasDefuser)))
-                player_info.SetFlag(FLAG_HAS_DEFUSER);
-
-            if (R().ReadMem<int8_t>(item_services + SCHEMA_OFFSET(CCSPlayer_ItemServices, m_bHasHelmet)))
-                player_info.SetFlag(FLAG_HAS_HELMET);
-        }
-
         const auto bounds = compute_screen_bounds(bone_map);
         if (!bounds.has_value())
             continue;
 
-        if (g_config.esp.player.bName && !player_info.szName.empty())
-            draw_name_label(*bounds, player_info.szName, IM_COL32_WHITE);
+        if (g_config.esp.player.bName && !cached.info.szName.empty())
+            draw_name_label(*bounds, cached.info.szName, IM_COL32_WHITE);
 
         if (g_config.esp.player.bHealth)
-            draw_health_bar(*bounds, player_info.iHealth, player_info.iMaxHealth);
+            draw_health_bar(*bounds, cached.info.iHealth, cached.info.iMaxHealth);
 
-        if (g_config.esp.player.bActiveWeapon && !player_info.szActiveWeaponName.empty())
-            g_config.esp.player.bActiveWeaponIcon ? draw_weapon_icon(*bounds, player_info.szActiveWeaponName) : draw_weapon_label(*bounds, player_info.szActiveWeaponName);
+        if (g_config.esp.player.bActiveWeapon && !cached.info.szActiveWeaponName.empty())
+        {
+            g_config.esp.player.bActiveWeaponIcon
+                ? draw_weapon_icon(*bounds, cached.info.iWeaponDef)
+                : draw_weapon_label(*bounds, cached.info.szActiveWeaponName);
+        }
 
-        draw_status_flags(*bounds, player_info);
+        draw_status_flags(*bounds, cached.info);
 
         if (g_config.esp.player.bDraw2DBox)
-            draw_bounding_box(*bounds,  1.f);
-/*
- * Undetected, even tho I dont like having any write operations
-        // Cache the inline struct base once — no dereference
-        const uintptr_t pGlowBase = pawn + SCHEMA_OFFSET(C_BaseModelEntity, m_Glow);
+            draw_bounding_box(*bounds, 1.f);
 
-        if (R().WriteMemPhysical<uint32_t>(pGlowBase + SCHEMA_OFFSET(CGlowProperty, m_glowColorOverride), 0xFF0000FF))
-            if (R().WriteMemPhysical<uint8_t>(pGlowBase + SCHEMA_OFFSET(CGlowProperty, m_bGlowing), 1))
-                ;
-*/
+        if (g_config.visuals.bDrawSnapLines)
+            draw_snapline(*bounds, false);
     }
 }
 
-void CESP::DrawSkeleton(const std::unordered_map<Bones, Utils::Math::Vector>& bone_map, float thickness)
+// ── CESP::DrawSkeleton ────────────────────────────────────────
+
+void CESP::DrawSkeleton(
+    const std::unordered_map<Bones, Utils::Math::Vector>& bone_map,
+    float thickness)
 {
     if (bone_map.empty())
         return;

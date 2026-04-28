@@ -101,7 +101,7 @@ public:
         req.size   = size;
         req.buffer = buffer;
 
-        return ioctl(m_fd, IOCTL_READ_PHYS_MEM, &req) >= 0;
+        return ioctl(m_fd, IOCTL_READ_MEM, &req) >= 0;
     }
 
     [[nodiscard]] bool WriteRaw(uintptr_t address, const void* buffer, size_t size) const
@@ -680,6 +680,27 @@ namespace Utils
             emit(EV_SYN, SYN_REPORT, 0);
         }
 
+        void move(float a_dx, float a_dy)
+        {
+            if (a_dx == 0.0f && a_dy == 0.0f)
+                return;
+
+            m_accum_x += a_dx;
+            m_accum_y += a_dy;
+
+            const int ix = static_cast<int>(m_accum_x);
+            const int iy = static_cast<int>(m_accum_y);
+
+            if (ix == 0 && iy == 0)
+                return;
+
+            m_accum_x -= static_cast<float>(ix);
+            m_accum_y -= static_cast<float>(iy);
+
+            if (ix != 0) emit(EV_REL, REL_X, ix);
+            if (iy != 0) emit(EV_REL, REL_Y, iy);
+            emit(EV_SYN, SYN_REPORT, 0);
+        }
 
         [[nodiscard]] int center_x() const { return m_center_x; }
         [[nodiscard]] int center_y() const { return m_center_y; }

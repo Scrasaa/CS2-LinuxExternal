@@ -13,20 +13,20 @@
 
 struct FlagMeta
 {
-    EPlayerFlags    flag;
-    std::string_view label;
+    EPlayerFlags flag;
     std::string_view json_key;
+    std::string_view label;
 };
 
 inline constexpr std::array<FlagMeta, 7> k_flag_meta
 {{
-    { FLAG_DEFUSING,    "Defusing",     "defusing"    },
-    { FLAG_PLANTING,    "Planting",     "planting"    },
-    { FLAG_SCOPED,      "Scoped",       "scoped"      },
-    { FLAG_FLASHED,     "Flashed",      "flashed"     },
-    { FLAG_HAS_C4,      "Has C4",       "has_c4"      },
-    { FLAG_HAS_DEFUSER, "Has Defuser",  "has_defuser" },
-    { FLAG_HAS_HELMET,  "Has Helmet",   "has_helmet"  },
+    { FLAG_DEFUSING,    "defusing",    "Defusing"    },
+    { FLAG_PLANTING,    "planting",    "Planting"    },
+    { FLAG_SCOPED,      "scoped",      "Scoped"      },
+    { FLAG_FLASHED,     "flashed",     "Flashed"     },
+    { FLAG_HAS_C4,      "has_c4",      "Has C4"      },
+    { FLAG_HAS_DEFUSER, "has_defuser", "Has Defuser" },
+    { FLAG_HAS_HELMET,  "has_helmet",  "Has Helmet"  },
 }};
 
 namespace cfg
@@ -42,6 +42,13 @@ namespace cfg
         float fSmoothness = 0.f;
 
         bool bAutoShoot = false;
+    };
+
+    struct RCS
+    {
+        bool bEnable = false;
+        float f_scale_x = 0.f;
+        float f_scale_y = 0.f;
     };
 
     struct Triggerbot
@@ -87,6 +94,7 @@ namespace cfg
     struct Config
     {
         Aimbot aimbot;
+        RCS rcs;
         Triggerbot triggerbot;
         ESP esp;
         Visuals visuals;

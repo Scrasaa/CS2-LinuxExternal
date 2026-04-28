@@ -66,6 +66,9 @@ add_executable(CS2_LinuxExternal
         Features/CVisuals.cpp
         Features/CVisuals.h
         SDK/WeaponType.h
+        SDK/player_info.h
+        Features/CRecoilControlSystem.cpp
+        Features/CRecoilControlSystem.h
 )
 
 # ── Include dirs ──────────────────────────────────────────────────────────────

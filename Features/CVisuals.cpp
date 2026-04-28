@@ -12,6 +12,54 @@
 #include "Utils/Overlay.h"
 #include "Utils/Utils.h"
 
+void CVisuals::DrawRecoilCrosshair()
+{
+    const auto v_punch = R().ReadMem<Utils::Math::Vector>(
+           g_EntityCache.m_local_pawn +
+           SCHEMA_OFFSET(C_CSPlayerPawnBase, m_aimPunchAngle));
+
+    // CS2 visually doubles the punch angle
+    constexpr float f_fov_deg   = 90.f;
+    constexpr float f_pi        = std::numbers::pi_v<float>;
+    const float f_half_w        = static_cast<float>(g_screen_w) * 0.5f;
+    const float f_half_h        = static_cast<float>(g_screen_h) * 0.5f;
+    const float f_deg_to_px     = f_half_w / std::tan((f_fov_deg * 0.5f) * (f_pi / 180.f));
+
+    const float f_offset_x =  (v_punch.y * 2.0f) * (f_pi / 180.f) * f_deg_to_px;
+    const float f_offset_y =  (v_punch.x * 2.0f) * (f_pi / 180.f) * f_deg_to_px;
+
+    const ImVec2 center { f_half_w + f_offset_x, f_half_h + f_offset_y };
+
+    constexpr float f_arm        = 6.0f;   // crosshair arm length (px)
+    constexpr float f_gap        = 3.0f;   // center gap (px)
+    constexpr float f_thickness  = 1.5f;
+    constexpr ImU32 col_outline  = IM_COL32(0,   0,   0,   200);
+    constexpr ImU32 col_fill     = IM_COL32(255, 100, 100, 230);
+
+    // Helper — draw one outlined line segment
+    auto draw_line = [&](ImVec2 a, ImVec2 b)
+    {
+        Overlay::draw_list->AddLine(a, b, col_outline, f_thickness + 1.5f);
+        Overlay::draw_list->AddLine(a, b, col_fill,    f_thickness);
+    };
+
+    // Horizontal arms
+    draw_line({ center.x - f_arm - f_gap, center.y },
+              { center.x - f_gap,          center.y });
+    draw_line({ center.x + f_gap,          center.y },
+              { center.x + f_arm + f_gap,  center.y });
+
+    // Vertical arms
+    draw_line({ center.x, center.y - f_arm - f_gap },
+              { center.x, center.y - f_gap          });
+    draw_line({ center.x, center.y + f_gap          },
+              { center.x, center.y + f_arm + f_gap  });
+
+    // Center dot
+    Overlay::draw_list->AddCircleFilled(center, 1.5f, col_outline);
+    Overlay::draw_list->AddCircleFilled(center, 1.0f, col_fill);
+}
+
 // Move to Visuals
 void CVisuals::DrawFOVIndicator()
 {

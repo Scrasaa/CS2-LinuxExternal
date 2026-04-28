@@ -31,6 +31,7 @@
 #include "BVH/map_manager.h"
 #include "Features/CAimbot.h"
 #include "Features/CESP.h"
+#include "Features/CRecoilControlSystem.h"
 #include "Features/CTriggerbot.h"
 #include "Features/CVisuals.h"
 #include "SDK/Helper/CInput.h"
@@ -639,6 +640,30 @@ void DrawMenu()
             ImGui::EndTabItem();
         }
 
+        if (ImGui::BeginTabItem("RCS"))
+        {
+            ImGui::BeginChild("RCSLeft", ImVec2(ImGui::GetContentRegionAvail().x * 0.5f, 0), true);
+            ImGui::Text("Recoil Control");
+            ImGui::Separator();
+            CheckboxCompact("Enable RCS", &g_config.rcs.bEnable);
+            ImGui::Separator();
+            SliderFloatCompact("Scale X", &g_config.rcs.f_scale_x, 0.0f, 1.0f, "%.2f");
+            SliderFloatCompact("Scale Y", &g_config.rcs.f_scale_y, 0.0f, 1.0f, "%.2f");
+            ImGui::EndChild();
+
+            ImGui::SameLine();
+
+            ImGui::BeginChild("RCSRight", ImVec2(0, 0), true);
+            ImGui::Text("Info");
+            ImGui::Separator();
+            ImGui::TextDisabled("1.00  =  full compensation");
+            ImGui::TextDisabled("0.50  =  half compensation");
+            ImGui::TextDisabled("0.00  =  axis disabled");
+            ImGui::EndChild();
+
+            ImGui::EndTabItem();
+        }
+
         if (ImGui::BeginTabItem("ESP"))
         {
             ImGui::BeginChild("ESPLeft", ImVec2(ImGui::GetContentRegionAvail().x * 0.5f, 0), true);
@@ -659,12 +684,14 @@ void DrawMenu()
                         CheckboxCompact("Draw Active Weapon", &g_config.esp.player.bActiveWeapon);
                         CheckboxCompact("Weapon Icon", &g_config.esp.player.bActiveWeaponIcon);
                         CheckboxCompact("Draw Skeleton", &g_config.esp.player.bSkeleton);
+                        CheckboxCompact("Draw Snaplines", &g_config.visuals.bDrawSnapLines);
 
                         ImGui::SeparatorText("Flag Indicators");
 
                         auto& show = g_config.esp.player.uShowFlags;
                         for (const auto& meta : k_flag_meta)
                             ImGui::CheckboxFlags(meta.label.data(), &show, static_cast<unsigned int>(meta.flag));
+
                         break;
                     }
                     case 1:
@@ -708,7 +735,6 @@ void DrawMenu()
             ImGui::Separator();
 
             CheckboxCompact("Draw Aimbot FOV", &g_config.visuals.bDrawFovCircle);
-            CheckboxCompact("Draw Snaplines", &g_config.visuals.bDrawSnapLines);
 
             ImGui::EndChild();
 
@@ -848,15 +874,19 @@ static void run()
 
         Overlay::draw_list = ImGui::GetForegroundDrawList();
 
-        if (Overlay::draw_list && g_EntityCache.refresh())
+        //F::RCS.Run();
+        if (g_config.visuals.bDrawFovCircle)
+            F::Visuals.DrawFOVIndicator();
+
+        //F::Visuals.DrawRecoilCrosshair();
+
+        if (g_EntityCache.refresh())
         {
             F::ESP.Run();
             if (g_input.is_key_pressed(CS2KeyCode::MouseLeft)) F::Aimbot.Run();
             if (g_input.is_key_pressed(CS2KeyCode::Mouse5)) F::Triggerbot.Run();
 
             F::Visuals.DrawSpectatorList();
-            if (g_config.visuals.bDrawFovCircle)
-                F::Visuals.DrawFOVIndicator();
         }
 
         ImGui::Render();

@@ -13,19 +13,15 @@ constexpr auto defaultCfgPath  = "/home/scrasa/.config/cs2-external/";
 constexpr auto k_default_cfg_path = "/home/scrasa/.config/cs2-external/default.json";
 
 //------------------------ Helper Functions
-
-// Store flags as named bools — human-readable in the config file,
-// not a raw integer that nobody can read without a reference
 inline void to_json(nlohmann::json& j, const PlayerInfo& p)
 {
     j =
     {
-        { "name",           p.szName        },
-        { "health",         p.iHealth       },
-        { "max_health",     p.iMaxHealth    },
-        { "armor",          p.iArmor        },
-        { "money",          p.iMoney        },
-        { "weapon",         p.szActiveWeaponName  },
+        { "name",       p.szName             },
+        { "health",     p.iHealth            },
+        { "max_health", p.iMaxHealth         },
+        { "armor",      p.iArmor             },
+        { "weapon",     p.szActiveWeaponName },
     };
 
     auto& flags_node = j["flags"];
@@ -35,14 +31,17 @@ inline void to_json(nlohmann::json& j, const PlayerInfo& p)
 
 inline void from_json(const nlohmann::json& j, PlayerInfo& p)
 {
-    j.at("name")           .get_to(p.szName);
-    j.at("health")         .get_to(p.iHealth);
-    j.at("max_health")     .get_to(p.iMaxHealth);
-    j.at("armor")          .get_to(p.iArmor);
-    j.at("money")          .get_to(p.iMoney);
-    j.at("weapon")         .get_to(p.szActiveWeaponName);
+    j.at("name")       .get_to(p.szName);
+    j.at("health")     .get_to(p.iHealth);
+    j.at("max_health") .get_to(p.iMaxHealth);
+    j.at("armor")      .get_to(p.iArmor);
+    j.at("weapon")     .get_to(p.szActiveWeaponName);
 
     p.flags = 0;
+
+    if (!j.contains("flags"))
+        return;
+
     const auto& flags_node = j.at("flags");
     for (const auto& meta : k_flag_meta)
     {
@@ -50,6 +49,7 @@ inline void from_json(const nlohmann::json& j, PlayerInfo& p)
             p.SetFlag(meta.flag);
     }
 }
+
 
 std::vector<std::string> cfg::GetConfigFiles()
 {
@@ -108,6 +108,12 @@ void cfg::Load(const std::string& cfgName)
     g_config.aimbot.fSmoothness         = jAimbot.value("fSmoothness", g_config.aimbot.fSmoothness);
     g_config.aimbot.bAutoShoot          = jAimbot.value("bAutoShoot", g_config.aimbot.bAutoShoot);
 
+    // ----- RCS -----
+    auto jRCS = j.value("RCS", json::object());
+    g_config.rcs.bEnable             = jRCS.value("bEnable", g_config.rcs.bEnable);
+    g_config.rcs.f_scale_x             = jRCS.value("f_scale_x", g_config.rcs.f_scale_x);
+    g_config.rcs.f_scale_y             = jRCS.value("f_scale_y", g_config.rcs.f_scale_y);
+
     // ----- Aimbot -----
     auto jTriggerbot = j.value("Triggerbot", json::object());
     g_config.triggerbot.bEnable             = jTriggerbot.value("bEnable", g_config.triggerbot.bEnable);
@@ -156,6 +162,14 @@ void cfg::Save(const std::string& cfgName)
         {"fRadius", g_config.aimbot.fRadius},
         {"fSmoothness", g_config.aimbot.fSmoothness},
         {"bAutoShoot", g_config.aimbot.bAutoShoot},
+    };
+
+    // ----- RCS -----
+    j["RCS"] =
+    {
+        {"bEnable", g_config.rcs.bEnable},
+        {"f_scale_x", g_config.rcs.f_scale_x},
+        {"f_scale_y", g_config.rcs.f_scale_y},
     };
 
     j["Triggerbot"] =

@@ -10,6 +10,7 @@ class CVisuals
 public:
     void DrawFOVIndicator();
     void DrawSpectatorList();
+    void DrawRecoilCrosshair();
 };
 
 namespace F {inline CVisuals Visuals;}
