@@ -28,7 +28,7 @@
 #include "CEntityCache.h"
 #include "CSchemaManager.h"
 #include "Utils/Utils.h"
-#include "../WeaponType.h"
+#include "../weapon_type.h"
 
 static constexpr uint32_t k_max_entities    = 256; // 1024 is too much, right?
 static constexpr uint32_t k_slots_per_chunk = 128;

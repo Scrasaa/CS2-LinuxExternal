@@ -16,7 +16,7 @@
 #include "Utils/BVH/map_manager.h"
 #include "../Thirdparty/ImGUI/imgui.h"
 #include "SDK/player_info.h"
-#include "SDK/WeaponType.h"
+#include "SDK/weapon_type.h"
 
 // ── Bone data ─────────────────────────────────────────────────
 
@@ -289,19 +289,40 @@ static void draw_snapline(const ScreenBounds& bounds, bool b_from_crosshair)
     Overlay::draw_list->AddLine(origin, target, IM_COL32_WHITE,  1.0f);
 }
 
+static void draw_skeleton(   const std::unordered_map<Bones, Utils::Math::Vector>& bone_map,
+    float thickness)
+{
+    if (bone_map.empty())
+        return;
+
+    for (const auto& [bone_a, bone_b] : BoneConnections)
+    {
+        const auto it_a = bone_map.find(bone_a);
+        const auto it_b = bone_map.find(bone_b);
+
+        if (it_a == bone_map.end() || it_b == bone_map.end())
+            continue;
+
+        const auto screen_a = Utils::Math::WorldToScreen(it_a->second);
+        const auto screen_b = Utils::Math::WorldToScreen(it_b->second);
+
+        if (!screen_a.has_value() || !screen_b.has_value())
+            continue;
+
+        Overlay::draw_list->AddLine(screen_a.value(), screen_b.value(), g_config.esp.skeletonColor, thickness);
+    }
+}
+
 // ── CESP::Run ─────────────────────────────────────────────────
 //
 //  All game-state data is pre-populated in g_EntityCache.refresh().
 //  This function is render-only: bone reads + ImGui draw calls.
 //  No RPM calls for player state occur here.
-
 void CESP::Run()
 {
     if (!g_config.esp.player.bEnable)
         return;
 
-    // Resolve local head once if visibility culling is active.
-    // Avoid the redundant scene-node read inside the player loop.
     Utils::Math::Vector local_head{};
     if (g_config.esp.player.bVisible)
     {
@@ -338,7 +359,7 @@ void CESP::Run()
         }
 
         if (g_config.esp.player.bSkeleton)
-            DrawSkeleton(bone_map);
+            draw_skeleton(bone_map, 1.f);
 
         const auto bounds = compute_screen_bounds(bone_map);
         if (!bounds.has_value())
@@ -364,32 +385,5 @@ void CESP::Run()
 
         if (g_config.visuals.bDrawSnapLines)
             draw_snapline(*bounds, false);
-    }
-}
-
-// ── CESP::DrawSkeleton ────────────────────────────────────────
-
-void CESP::DrawSkeleton(
-    const std::unordered_map<Bones, Utils::Math::Vector>& bone_map,
-    float thickness)
-{
-    if (bone_map.empty())
-        return;
-
-    for (const auto& [bone_a, bone_b] : BoneConnections)
-    {
-        const auto it_a = bone_map.find(bone_a);
-        const auto it_b = bone_map.find(bone_b);
-
-        if (it_a == bone_map.end() || it_b == bone_map.end())
-            continue;
-
-        const auto screen_a = Utils::Math::WorldToScreen(it_a->second);
-        const auto screen_b = Utils::Math::WorldToScreen(it_b->second);
-
-        if (!screen_a.has_value() || !screen_b.has_value())
-            continue;
-
-        Overlay::draw_list->AddLine(screen_a.value(), screen_b.value(), g_config.esp.skeletonColor, thickness);
     }
 }

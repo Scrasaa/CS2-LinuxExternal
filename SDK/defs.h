@@ -19,7 +19,7 @@ static constexpr uint32_t k_utlvec_size           = 0x10;  // int32_t m_Size
 // ── CUtlMemoryPoolBase  (first member of CUtlTSHashV2) ───────────────────────
 static constexpr uint32_t k_pool_blocks_allocated = 0x08;
 static constexpr uint32_t k_pool_peak_alloc       = 0x10;
-static constexpr uint32_t k_pool_free_head        = 0x20;//0x18;
+static constexpr uint32_t k_pool_free_head        = 0x20;
 
 // ── CUtlTSHashV2 ─────────────────────────────────────────────────────────────
 static constexpr uint32_t k_bucket_first_uncommit = 0x10; // m_pFirstUncommitted within bucket

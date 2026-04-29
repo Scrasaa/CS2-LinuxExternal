@@ -38,11 +38,10 @@ struct ScreenBounds
 
 Utils::Math::Vector bone_position(uintptr_t game_scene_node, uint64_t bone_index);
 
-class CESP
+class CESP // namespace would be better
 {
 public:
     void Run();
-    void DrawSkeleton(const std::unordered_map<Bones, Utils::Math::Vector>& bone_map, float thickness = 1.5f);
 };
 
 namespace F { inline CESP ESP; }

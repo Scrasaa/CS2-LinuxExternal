@@ -65,7 +65,7 @@ add_executable(CS2_LinuxExternal
         SDK/Helper/ConVar.cpp
         Features/CVisuals.cpp
         Features/CVisuals.h
-        SDK/WeaponType.h
+        SDK/weapon_type.h
         SDK/player_info.h
         Features/CRecoilControlSystem.cpp
         Features/CRecoilControlSystem.h
@@ -91,7 +91,4 @@ target_link_libraries(CS2_LinuxExternal PRIVATE
         # OpenGL + GLX
         OpenGL::GL
         OpenGL::GLX
-
-        # Threading (std::thread)
-        pthread
 )

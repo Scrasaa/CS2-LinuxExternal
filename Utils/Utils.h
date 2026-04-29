@@ -249,15 +249,15 @@ public:
 
     [[nodiscard]] std::string ReadString(uintptr_t address, size_t maxLength = 256) const
     {
-        if (address == 0)
-            return {};
+        if (!address) return {};
 
         std::vector<char> buffer(maxLength);
         if (!ReadRaw(address, buffer.data(), maxLength))
             return {};
 
-        buffer[maxLength - 1] = '\0';
-        return std::string(buffer.data());
+        const size_t len = strnlen(buffer.data(), maxLength);
+
+        return std::string(buffer.data(), len);
     }
 
     // ---------- Module info ----------

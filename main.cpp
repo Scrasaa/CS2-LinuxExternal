@@ -116,9 +116,9 @@ int main()
         return 1;
     }
 
-    g_GlobalVars = R().GetAbsoluteAddress(pattern_hit_global_vars, 0x3, 0x7);
+    g_global_vars = R().GetAbsoluteAddress(pattern_hit_global_vars, 0x3, 0x7);
 
-    if (!g_GlobalVars)
+    if (!g_global_vars)
     {
         std::cerr << "[-] Failed to resolve g_global_vars.\n";
         CUtils::Shutdown();
@@ -127,7 +127,7 @@ int main()
 
     g_MapManager = MapManager
     (
-                g_GlobalVars,
+                g_global_vars,
     [](uintptr_t addr)                      { return R().ReadMem<uintptr_t>(addr); },
     [](uintptr_t addr, std::size_t n)
     {return R().ReadString(addr, n);},

@@ -68,5 +68,4 @@ enum class CS2KeyCode : std::uint32_t
 [[nodiscard]] std::string_view key_code_to_string(CS2KeyCode e_key) noexcept;
 
 // Parses a key name string (e.g. "KeyA", "MouseLeft") into a KeyCode.
-// Returns std::nullopt if the name is not recognised.
 [[nodiscard]] std::optional<CS2KeyCode> key_code_from_string(std::string_view sv_input) noexcept;

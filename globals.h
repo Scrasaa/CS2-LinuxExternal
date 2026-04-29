@@ -10,7 +10,7 @@ inline float g_screen_w = 0;
 inline float g_screen_h = 0;
 inline bool g_is_ffa = false;
 
-inline uintptr_t g_GlobalVars = 0;
+inline uintptr_t g_global_vars = 0;
 
 inline Offsets g_offsets{};
 

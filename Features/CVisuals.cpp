@@ -16,7 +16,7 @@ void CVisuals::DrawRecoilCrosshair()
 {
     const auto v_punch = R().ReadMem<Utils::Math::Vector>(
            g_EntityCache.m_local_pawn +
-           SCHEMA_OFFSET(C_CSPlayerPawnBase, m_aimPunchAngle));
+           SCHEMA_OFFSET(C_CSPlayerPawnBase, m_aimPunchAngle)); // WRONG
 
     // CS2 visually doubles the punch angle
     constexpr float f_fov_deg   = 90.f;
@@ -76,7 +76,7 @@ void CVisuals::DrawFOVIndicator()
 
 constexpr ImU32 outline_color = IM_COL32(0, 0, 0, 255);
 constexpr float offset = 1.0f;
-const char* header_text = "Spectator List:";
+auto header_text = "Spectator List:";
 constexpr ImVec2 header_pos(20, 450.f - 15);
 
 void CVisuals::DrawSpectatorList()
