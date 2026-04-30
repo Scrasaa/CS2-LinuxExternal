@@ -82,6 +82,15 @@ namespace cfg
 
         ImColor boxColorEnemy = ImColor(255, 255, 255, 255);
         ImColor skeletonColor = ImColor(255, 255, 255, 255);
+        ImColor nameColor = ImColor(255, 255, 255, 255);
+        ImColor snaplineColor = ImColor(255, 255, 255, 255);
+        ImColor flashColor = ImColor(255, 255,   0, 255);
+        ImColor hkColor = ImColor(100, 200, 255, 255);
+        ImColor kevlarColor = ImColor(100, 200, 255, 255);
+        ImColor scopedColor= ImColor(255, 220,  80, 255);
+        ImColor weaponNameColor = ImColor(255, 255, 255, 255);
+        ImColor defuserColor = ImColor( 80, 220, 255, 255);
+        ImColor defusingColor = ImColor(255,  80,  80, 255);
     };
 
     struct Visuals

@@ -748,8 +748,17 @@ void DrawMenu()
 
         if (ImGui::BeginTabItem("Color"))
         {
-            ImGui::ColorEdit4("Skeleton Color", reinterpret_cast<float *>(&g_config.esp.skeletonColor.Value));
-            ImGui::ColorEdit4("Box Color", reinterpret_cast<float *>(&g_config.esp.boxColorEnemy.Value));
+            ImGui::ColorEdit4("Skeleton Color", reinterpret_cast<float*>(&g_config.esp.skeletonColor.Value));
+            ImGui::ColorEdit4("Box Color", reinterpret_cast<float*>(&g_config.esp.boxColorEnemy.Value));
+            ImGui::ColorEdit4("Name Color", reinterpret_cast<float*>(&g_config.esp.nameColor.Value));
+            ImGui::ColorEdit4("Snapline Color", reinterpret_cast<float*>(&g_config.esp.snaplineColor.Value));
+            ImGui::ColorEdit4("Flash Color", reinterpret_cast<float*>(&g_config.esp.flashColor.Value));
+            ImGui::ColorEdit4("HK Color", reinterpret_cast<float*>(&g_config.esp.hkColor.Value));
+            ImGui::ColorEdit4("Kevlar Color", reinterpret_cast<float*>(&g_config.esp.kevlarColor.Value));
+            ImGui::ColorEdit4("Scoped Color", reinterpret_cast<float*>(&g_config.esp.scopedColor.Value));
+            ImGui::ColorEdit4("Weapon Name Color", reinterpret_cast<float*>(&g_config.esp.weaponNameColor.Value));
+            ImGui::ColorEdit4("Defuser Color", reinterpret_cast<float*>(&g_config.esp.defuserColor.Value));
+            ImGui::ColorEdit4("Defusing Color", reinterpret_cast<float*>(&g_config.esp.defusingColor.Value));
 
             ImGui::EndTabItem();
         }

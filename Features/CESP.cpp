@@ -149,14 +149,14 @@ static void draw_bounding_box(const ScreenBounds& bounds, float thickness)
         thickness);
 }
 
-static void draw_name_label(const ScreenBounds& bounds, const std::string& name, ImU32 color)
+static void draw_name_label(const ScreenBounds& bounds, const std::string& name)
 {
     const ImVec2 text_size = ImGui::CalcTextSize(name.c_str());
     const float  x         = bounds.min_x + ((bounds.max_x - bounds.min_x) - text_size.x) * 0.5f;
     const float  y         = bounds.min_y - text_size.y - 3.f;
 
     Overlay::draw_list->AddText(ImVec2(x + 1.f, y + 1.f), IM_COL32(0, 0, 0, 200), name.c_str());
-    Overlay::draw_list->AddText(ImVec2(x,        y),       color,                  name.c_str());
+    Overlay::draw_list->AddText(ImVec2(x,        y),       g_config.esp.nameColor,                  name.c_str());
 }
 
 static void draw_health_bar(const ScreenBounds& bounds, int32_t health, int32_t max_health)
@@ -208,7 +208,7 @@ static void draw_weapon_label(const ScreenBounds& bounds, const std::string& wea
     const float  y    = bounds.max_y;
 
     Overlay::draw_list->AddText(ImVec2(x + 1.f, y + 1.f), IM_COL32(0,   0,   0,   200), weapon_name.c_str());
-    Overlay::draw_list->AddText(ImVec2(x,        y),       IM_COL32(255, 255, 255, 255), weapon_name.c_str());
+    Overlay::draw_list->AddText(ImVec2(x,        y),       g_config.esp.weaponNameColor, weapon_name.c_str());
 }
 
 static void draw_weapon_icon(const ScreenBounds& bounds, const int32_t wep_def)
@@ -255,21 +255,21 @@ static void draw_status_flags(const ScreenBounds& bounds, const PlayerInfo& play
     if (player_info.iArmor > 0 && (show & FLAG_HAS_HELMET))
     {
         player_info.HasFlag(FLAG_HAS_HELMET)
-            ? draw_flag("HK", IM_COL32(100, 200, 255, 255))
-            : draw_flag("K",  IM_COL32(150, 220, 255, 255));
+            ? draw_flag("HK", g_config.esp.hkColor)
+            : draw_flag("K",  g_config.esp.kevlarColor);
     }
 
     if ((show & FLAG_SCOPED)      && player_info.HasFlag(FLAG_SCOPED))
-        draw_flag("*SCOPED*",   IM_COL32(255, 220,  80, 255));
+        draw_flag("*SCOPED*",   g_config.esp.scopedColor);
 
     if ((show & FLAG_HAS_DEFUSER) && player_info.HasFlag(FLAG_HAS_DEFUSER))
-        draw_flag("KIT",        IM_COL32( 80, 220, 255, 255));
+        draw_flag("KIT",        g_config.esp.defuserColor);
 
     if ((show & FLAG_DEFUSING)    && player_info.HasFlag(FLAG_DEFUSING))
-        draw_flag("*DEFUSING*", IM_COL32(255,  80,  80, 255));
+        draw_flag("*DEFUSING*", g_config.esp.defusingColor);
 
     if ((show & FLAG_FLASHED)     && player_info.HasFlag(FLAG_FLASHED))
-        draw_flag("*FLASHED*",  IM_COL32(255, 255,   0, 255));
+        draw_flag("*FLASHED*",  g_config.esp.flashColor);
 }
 
 static void draw_snapline(const ScreenBounds& bounds, bool b_from_crosshair)
@@ -286,7 +286,7 @@ static void draw_snapline(const ScreenBounds& bounds, bool b_from_crosshair)
 
     // Outline pass first, fill pass on top
     Overlay::draw_list->AddLine(origin, target, IM_COL32(0, 0, 0, 160), 2.5f);
-    Overlay::draw_list->AddLine(origin, target, IM_COL32_WHITE,  1.0f);
+    Overlay::draw_list->AddLine(origin, target, g_config.esp.snaplineColor,  1.0f);
 }
 
 static void draw_skeleton(   const std::unordered_map<Bones, Utils::Math::Vector>& bone_map,
@@ -366,7 +366,7 @@ void CESP::Run()
             continue;
 
         if (g_config.esp.player.bName && !cached.info.szName.empty())
-            draw_name_label(*bounds, cached.info.szName, IM_COL32_WHITE);
+            draw_name_label(*bounds, cached.info.szName);
 
         if (g_config.esp.player.bHealth)
             draw_health_bar(*bounds, cached.info.iHealth, cached.info.iMaxHealth);

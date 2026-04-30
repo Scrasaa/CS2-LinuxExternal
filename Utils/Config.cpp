@@ -131,8 +131,17 @@ void cfg::Load(const std::string& cfgName)
     g_config.esp.player.bActiveWeapon   = jPlayerESP.value("bActiveWeapon", g_config.esp.player.bActiveWeapon);
     g_config.esp.player.bActiveWeaponIcon   = jPlayerESP.value("bActiveWeaponIcon", g_config.esp.player.bActiveWeaponIcon);
 
-    g_config.esp.boxColorEnemy  =  JsonToImColor(jPlayerESP.value("boxColorEnemy", ImColorToJson(g_config.esp.boxColorEnemy)));
-    g_config.esp.skeletonColor  =  JsonToImColor(jPlayerESP.value("skeletonColor", ImColorToJson(g_config.esp.skeletonColor)));
+    g_config.esp.boxColorEnemy   = JsonToImColor(jPlayerESP.value("boxColorEnemy", ImColorToJson(g_config.esp.boxColorEnemy)));
+    g_config.esp.skeletonColor   = JsonToImColor(jPlayerESP.value("skeletonColor", ImColorToJson(g_config.esp.skeletonColor)));
+    g_config.esp.nameColor       = JsonToImColor(jPlayerESP.value("nameColor", ImColorToJson(g_config.esp.nameColor)));
+    g_config.esp.snaplineColor   = JsonToImColor(jPlayerESP.value("snaplineColor", ImColorToJson(g_config.esp.snaplineColor)));
+    g_config.esp.flashColor      = JsonToImColor(jPlayerESP.value("flashColor", ImColorToJson(g_config.esp.flashColor)));
+    g_config.esp.hkColor         = JsonToImColor(jPlayerESP.value("hkColor", ImColorToJson(g_config.esp.hkColor)));
+    g_config.esp.kevlarColor         = JsonToImColor(jPlayerESP.value("kevlarColor", ImColorToJson(g_config.esp.kevlarColor)));
+    g_config.esp.scopedColor     = JsonToImColor(jPlayerESP.value("scopedColor", ImColorToJson(g_config.esp.scopedColor)));
+    g_config.esp.weaponNameColor = JsonToImColor(jPlayerESP.value("weaponNameColor", ImColorToJson(g_config.esp.weaponNameColor)));
+    g_config.esp.defuserColor    = JsonToImColor(jPlayerESP.value("defuserColor", ImColorToJson(g_config.esp.defuserColor)));
+    g_config.esp.defusingColor   = JsonToImColor(jPlayerESP.value("defusingColor", ImColorToJson(g_config.esp.defusingColor)));
 
     g_config.esp.player.uShowFlags = 0;
     const auto& jShowFlags = jPlayerESP.value("show_flags", json::object());
@@ -206,6 +215,78 @@ void cfg::Save(const std::string& cfgName)
                 g_config.esp.skeletonColor.Value.y,
                 g_config.esp.skeletonColor.Value.z,
                 g_config.esp.skeletonColor.Value.w
+            }
+        },
+        {"nameColor",
+        {
+            g_config.esp.nameColor.Value.x,
+            g_config.esp.nameColor.Value.y,
+            g_config.esp.nameColor.Value.z,
+            g_config.esp.nameColor.Value.w
+        }
+        },
+        {"snaplineColor",
+            {
+                g_config.esp.snaplineColor.Value.x,
+                g_config.esp.snaplineColor.Value.y,
+                g_config.esp.snaplineColor.Value.z,
+                g_config.esp.snaplineColor.Value.w
+            }
+        },
+        {"flashColor",
+            {
+                g_config.esp.flashColor.Value.x,
+                g_config.esp.flashColor.Value.y,
+                g_config.esp.flashColor.Value.z,
+                g_config.esp.flashColor.Value.w
+            }
+        },
+        {"hkColor",
+            {
+                g_config.esp.hkColor.Value.x,
+                g_config.esp.hkColor.Value.y,
+                g_config.esp.hkColor.Value.z,
+                g_config.esp.hkColor.Value.w
+            }
+        },
+        {"scopedColor",
+            {
+                g_config.esp.scopedColor.Value.x,
+                g_config.esp.scopedColor.Value.y,
+                g_config.esp.scopedColor.Value.z,
+                g_config.esp.scopedColor.Value.w
+            }
+        },
+        {"weaponNameColor",
+            {
+                g_config.esp.weaponNameColor.Value.x,
+                g_config.esp.weaponNameColor.Value.y,
+                g_config.esp.weaponNameColor.Value.z,
+                g_config.esp.weaponNameColor.Value.w
+            }
+        },
+        {"defuserColor",
+            {
+                g_config.esp.defuserColor.Value.x,
+                g_config.esp.defuserColor.Value.y,
+                g_config.esp.defuserColor.Value.z,
+                g_config.esp.defuserColor.Value.w
+            }
+        },
+        {"defusingColor",
+            {
+                g_config.esp.defusingColor.Value.x,
+                g_config.esp.defusingColor.Value.y,
+                g_config.esp.defusingColor.Value.z,
+                g_config.esp.defusingColor.Value.w
+            }
+        },
+        {"kevlarColor",
+            {
+            g_config.esp.kevlarColor.Value.x,
+            g_config.esp.kevlarColor.Value.y,
+            g_config.esp.kevlarColor.Value.z,
+            g_config.esp.kevlarColor.Value.w
             }
         }
     };
