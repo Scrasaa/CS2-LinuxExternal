@@ -69,6 +69,7 @@ add_executable(CS2_LinuxExternal
         SDK/player_info.h
         Features/CRecoilControlSystem.cpp
         Features/CRecoilControlSystem.h
+        Utils/glow_render.h
 )
 
 # ── Include dirs ──────────────────────────────────────────────────────────────

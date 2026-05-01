@@ -37,6 +37,89 @@
 #include "SDK/Helper/CInput.h"
 #include "SDK/Helper/ConVar.h"
 
+// ─────────────────────────────────────────────────────────────────────────────
+// CS2 focus detection
+//
+// Polls _NET_ACTIVE_WINDOW each frame on the overlay's Display connection.
+// Resolves the CS2 window once by name; re-resolves if the cached XID goes
+// stale (window recreated after a map change, etc.).
+// ─────────────────────────────────────────────────────────────────────────────
+
+struct FocusTracker
+{
+    Window cs2_window = 0;
+
+    // Walks the window tree looking for a window whose WM_CLASS or WM_NAME
+    // matches the CS2 process.  Called once on first use and on cache miss.
+    Window find_cs2(Display* dpy) const
+    {
+        return find_by_name(dpy, DefaultRootWindow(dpy), "cs2");
+    }
+
+    bool cs2_has_focus(Display* dpy)
+    {
+        Atom   actual_type;
+        int    actual_fmt;
+        unsigned long n_items, bytes_after;
+        unsigned char* data = nullptr;
+
+        const Atom net_active = XInternAtom(dpy, "_NET_ACTIVE_WINDOW", False);
+        if (XGetWindowProperty(dpy, DefaultRootWindow(dpy),
+                               net_active, 0, 1, False, XA_WINDOW,
+                               &actual_type, &actual_fmt,
+                               &n_items, &bytes_after, &data) != Success)
+            return false;
+
+        Window active = 0;
+        if (data)
+        {
+            active = *reinterpret_cast<Window*>(data);
+            XFree(data);
+        }
+
+        // Lazy-init / re-resolve on stale cache
+        if (!cs2_window)
+            cs2_window = find_cs2(dpy);
+
+        return active != 0 && active == cs2_window;
+    }
+
+private:
+    // Recursive WM_CLASS search — kept simple, depth-limited to avoid
+    // traversing the entire tree on every call.
+    Window find_by_name(Display* dpy, Window root, const char* target,
+                        int depth = 0) const
+    {
+        if (depth > 5) return 0;
+
+        // Check WM_CLASS on this window
+        XClassHint hint{};
+        if (XGetClassHint(dpy, root, &hint))
+        {
+            const bool match =
+                (hint.res_name  && strcasecmp(hint.res_name,  target) == 0) ||
+                (hint.res_class && strcasecmp(hint.res_class, target) == 0);
+            XFree(hint.res_name);
+            XFree(hint.res_class);
+            if (match) return root;
+        }
+
+        Window parent, *children = nullptr;
+        unsigned int n_children = 0;
+        if (!XQueryTree(dpy, root, &root, &parent, &children, &n_children))
+            return 0;
+
+        Window found = 0;
+        for (unsigned int i = 0; i < n_children && !found; ++i)
+            found = find_by_name(dpy, children[i], target, depth + 1);
+
+        if (children) XFree(children);
+        return found;
+    }
+};
+
+static FocusTracker g_focus;
+
 namespace Overlay
 {
 
@@ -883,17 +966,16 @@ static void run()
 
         Overlay::draw_list = ImGui::GetForegroundDrawList();
 
-        //F::RCS.Run();
-        if (g_config.visuals.bDrawFovCircle)
+        const bool cs2_focused = g_focus.cs2_has_focus(g_ow.display);
+
+        if (g_config.visuals.bDrawFovCircle && cs2_focused)
             F::Visuals.DrawFOVIndicator();
 
-        //F::Visuals.DrawRecoilCrosshair();
-
-        if (g_EntityCache.refresh())
+        if (cs2_focused && g_EntityCache.refresh())
         {
             F::ESP.Run();
             if (g_input.is_key_pressed(CS2KeyCode::MouseLeft)) F::Aimbot.Run();
-            if (g_input.is_key_pressed(CS2KeyCode::Mouse5)) F::Triggerbot.Run();
+            if (g_input.is_key_pressed(CS2KeyCode::Mouse5))    F::Triggerbot.Run();
 
             F::Visuals.DrawSpectatorList();
         }
